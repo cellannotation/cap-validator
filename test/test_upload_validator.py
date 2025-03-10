@@ -158,23 +158,29 @@ def test_var_index():
     except Exception as e:
         assert False, f"Unexpected error: {e}"
 
+
 @pytest.mark.parametrize("set_organism", [False, True])
 def test_validator(set_organism):
-    file_path = TMP_DIR / "test_validator.h5ad"
-
-    adata = ad.AnnData(X=np.eye(10).astype(np.float32))
+    x = np.eye(10) + 0.1  # not a counts
+    adata = ad.AnnData(X=x) 
     if set_organism:
         adata.obs[ORGANISM_COLUMN] = EnsemblOrganism.HUMAN.value
     
+    file_path = TMP_DIR / "bad_adata.h5ad"
+
     adata.write_h5ad(filename=file_path)
     del adata
 
+    # Wrong X, wrong var, wrong obs, wrong obsm
     validator = UploadValidator(file_path)
     
     try:
         validator.validate()
     except CapMultiException as e:
-        expected_errors = 4 if set_organism else 3
+        if set_organism:
+            expected_errors = 4  # gene ids will be validated
+        else:
+            expected_errors = 3  # gene ids won't be validated
         assert len(e.ex_list) == expected_errors, "Wrong multi exception content!"
     except Exception as e:
-        assert False, "Unexpected exception while validation!"
+        assert False, "Unpredicted exception while the validation!"

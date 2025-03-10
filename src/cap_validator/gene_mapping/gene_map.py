@@ -1,9 +1,10 @@
 from enum import Enum
 import pandas as pd
+from pathlib import Path
 
-
-HUMAN_GENE_MAP_PATH = "./data/homo_sapiens.csv"
-MOUSE_GENE_MAP_PATH = "./data/mus_musculus.csv"
+HERE = Path(__file__).parent
+HUMAN_GENE_MAP_PATH = HERE / "data/homo_sapiens.csv"
+MOUSE_GENE_MAP_PATH = HERE / "data/mus_musculus.csv"
 
 
 class EnsemblOrganism(Enum):
