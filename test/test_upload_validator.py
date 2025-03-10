@@ -6,9 +6,9 @@ from pathlib import Path
 import tempfile
 from cap_anndata import CapAnnDataDF, read_h5ad
 
-from cap_validator.upload_validator import UploadValidator, OBS_COLUMNS_REQUIRED, ORGANISM_COLUMN
-from cap_validator.gene_mapping import GeneMap, EnsemblOrganism
-from cap_validator.errors import (
+from cap_upload_validator.upload_validator import UploadValidator, OBS_COLUMNS_REQUIRED, ORGANISM_COLUMN
+from cap_upload_validator.gene_mapping import GeneMap, EnsemblOrganism
+from cap_upload_validator.errors import (
     AnnDataMissingEmbeddings,
     AnnDataMisingObsColumns,
     AnnDataNonStandardVarError,

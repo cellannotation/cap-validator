@@ -76,14 +76,30 @@ class AnnDataFileMissingCountMatrix(CapException):
 
 class AnnDataMissingEmbeddings(CapException):
     name = "AnnDataMissingEmbeddings"
-    message = "The embedding is missing or is incorrectly named: embeddings must be saved with the prefix X_, for example: X_tsne, X_pca or X_umap."
+    message = \
+        """
+        The embedding is missing or is incorrectly named: embeddings must be a [n_cells x 2] 
+        numpy array saved with the prefix X_, for example: X_tsne, X_pca or X_umap.
+        """
 
 
 class AnnDataMisingObsColumns(CapException):
     name = "AnnDataMisingObsColumns"
-    message = "Required obs column(s) missing: file must contain 'assay', 'disease', 'organism' and 'tissue' fields with valid values, see (link to obs section of upload requirements) for more information."
+    message = \
+        """
+            Required obs column(s) missing: file must contain 
+            'assay', 'disease', 'organism' and 'tissue' fields with valid values, 
+            see (link to obs section of upload requirements) for more information.
+        """
 
 
 class AnnDataNonStandardVarError(CapException):
     name = "AnnDataNonStandardVarError"
-    message = "File does not contain ENSEMBL terms in var: see (link to var section of upload requirements). We currently support Homo sapiens and Mus musculus. If there are other species you wish to upload to CAP, please contact support@celltype.info and we will work to accommodate your request."
+    message = \
+        """
+            File does not contain valid ENSEMBL terms in var.
+            We currently support Homo sapiens and Mus musculus.
+            In the case of multiple species in the dataset, orthologous Homo sapiens genes are required.
+            If there are other species you wish to upload to CAP, please contact
+            support@celltype.info and we will work to accommodate your request.
+        """ 

@@ -3,8 +3,8 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "cap_validator"
-version = "1.0.0"
+name = "cap_upload_validator"
+version = "0.0.1"
 authors = [
   { name="Roman Mukhin" },
   { name="Andrey Isaev" },

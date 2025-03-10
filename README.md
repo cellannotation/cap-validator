@@ -50,7 +50,7 @@ obj.run()
 5. Open a Pull Request
 
 ## License
-[MIT License](LICENSE)
+[BSD 3-Clause License](LICENSE)
 
 ## Acknowledgments
 - List any contributors, inspirations, or resources here.
