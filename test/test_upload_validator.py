@@ -53,7 +53,7 @@ def test_has_embeddings():
 
     with read_h5ad(file_path, edit=False) as cap_adata:
         v = UploadValidator(adata_path=file_path)
-        v.multi_exception.raise_on_append = True
+        v._multi_exception.raise_on_append = True
         try:
             v._check_obsm(cap_adata)
         except:
@@ -79,7 +79,7 @@ def test_obs():
     
     with read_h5ad(file_path, edit=False) as cap_adata:
         v = UploadValidator(adata_path=file_path)
-        v.multi_exception.raise_on_append = True
+        v._multi_exception.raise_on_append = True
         cap_adata.read_obs()
         df = cap_adata.obs.copy()
 

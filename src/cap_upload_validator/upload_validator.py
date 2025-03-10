@@ -31,16 +31,27 @@ class UploadValidator:
     def __init__(self, adata_path: str) -> None:
         self._adata_path = adata_path
         # Create container to raise a multiple errors for client
-        self.multi_exception = CapMultiException()    
-        self.organism = None  
-        self.ensembl_ids = None
+        self._multi_exception = CapMultiException()    
+        self._organism = None  
+        self._ensembl_ids = None
 
+    @property
+    def adata_path(self) -> str:
+        return self._adata_path
+    
+    @property
+    def organism(self) -> str:
+        return self._organism
 
-    def validate(self) -> None:
+    @property
+    def ensembl_ids(self) -> pd.Index:
+        return self._ensembl_ids
+
+    def validate(self, report_success: bool = True) -> None:
         """The method validates the input AnnData on the upload stage and raises exceptions if something wrong."""
         logger.debug("Begin anndata file validation...")
 
-        if not self._adata_path.endswith(".h5ad"):
+        if not str(self._adata_path).endswith(".h5ad"):
             raise BadAnnDataFile
         
         with read_h5ad(self._adata_path, edit=False) as cap_adata:
@@ -55,16 +66,17 @@ class UploadValidator:
             self._check_var_index(cap_adata)
 
         # Check any errors were during validation stage and raise them
-        if self.multi_exception.have_errors():
-            raise self.multi_exception
-            
+        if self._multi_exception.have_errors():
+            raise self._multi_exception
+        if report_success:
+            print("Validation passed!")
         logger.debug("Finish anndata file validation")
 
     def _check_X(self, cap_adata: CapAnnData) -> None:
         logger.debug("Begin checking X")
         X = cap_adata.raw.X if cap_adata.raw is not None else cap_adata.X
         if X is None or not self._check_is_positive_integers(cap_adata):
-            self.multi_exception.append(AnnDataFileMissingCountMatrix())
+            self._multi_exception.append(AnnDataFileMissingCountMatrix())
         logger.debug("Finished checking X!")
 
     @staticmethod
@@ -94,7 +106,7 @@ class UploadValidator:
     def _check_obsm(self, cap_adata: CapAnnData) -> None:
         logger.debug("Begin checking obsm")
         if self._has_embeddings(cap_adata) is False:
-            self.multi_exception.append(AnnDataMissingEmbeddings())
+            self._multi_exception.append(AnnDataMissingEmbeddings())
         logger.debug("Finished checking obsm!")
 
     def _has_embeddings(self, cap_adata: CapAnnData) -> bool:
@@ -119,7 +131,7 @@ class UploadValidator:
         logger.debug(f"Checking obs_columns = {obs_columns} for required {OBS_COLUMNS_REQUIRED}!")
         
         if obs is None or not set(OBS_COLUMNS_REQUIRED).issubset(obs_columns):
-            self.multi_exception.append(AnnDataMisingObsColumns())
+            self._multi_exception.append(AnnDataMisingObsColumns())
             return
 
         for column in OBS_COLUMNS_REQUIRED:
@@ -128,7 +140,7 @@ class UploadValidator:
             seria = seria.replace(r'^\s*$', np.nan, regex=True)
             # Check that no NaN in column
             if not pd.notna(seria).all():
-                self.multi_exception.append(AnnDataMisingObsColumns())
+                self._multi_exception.append(AnnDataMisingObsColumns())
                 return
         logger.debug("Finished checking obs!")
 
@@ -136,18 +148,18 @@ class UploadValidator:
         logger.debug("Start checking var index...")
         index = cap_adata.var.index
         clean_index = self._remove_gene_version(index)
-        self.ensembl_ids = clean_index
+        self._ensembl_ids = clean_index
 
         if not clean_index.is_unique:
             logger.debug("There are non unique gene ids in .var.index!")
-            self.multi_exception.append(AnnDataNonStandardVarError())
+            self._multi_exception.append(AnnDataNonStandardVarError())
             return 
 
         # Check if the var.index is a subset of raw.var.index
         if cap_adata.raw is not None and cap_adata.raw.var is not None:
             logger.debug("As of raw exists, checking that var.index is a subset of raw.var.index!")
             if not index.isin(cap_adata.raw.var.index).all():
-                self.multi_exception.append(AnnDataNonStandardVarError())
+                self._multi_exception.append(AnnDataNonStandardVarError())
                 return
 
         # Check the number of organisms in the dataset
@@ -166,17 +178,17 @@ class UploadValidator:
         # Check ENSEMBL ids for supported organism
         if len(dataset_organisms) == 1:
             organism = list(dataset_organisms)[0]
-            self.organism = organism
+            self._organism = organism
             if organism in known_organisms_values:
                 logger.debug("There is the only known organisms in dataset, so we must check for Unsemble IDs in var.index!")
                 self._validate_gene_ids(ens_ids=clean_index, organism=organism)
             else:
                 logger.debug("Unknown organisms in dataset found, index var validation skipped!")
         elif len(dataset_organisms) > 1:
-            self.organism = EnsemblOrganism.MULTI_SPECIES.value
+            self._organism = EnsemblOrganism.MULTI_SPECIES.value
             self._validate_gene_ids(
                 ens_ids=clean_index,
-                organism=self.organism,
+                organism=self._organism,
                 )
         logger.debug("Finished checking var index!")
     
@@ -191,11 +203,11 @@ class UploadValidator:
             if not ens_ids.isin(df['ENSEMBL_gene']).all():
                 # Gene names are non standard
                 logger.debug("Gene names are not standard!")
-                self.multi_exception.append(AnnDataNonStandardVarError())
+                self._multi_exception.append(AnnDataNonStandardVarError())
         else:
             # Gene names are missed
             logger.debug("Gene names are missed!")
-            self.multi_exception.append(AnnDataNonStandardVarError())
+            self._multi_exception.append(AnnDataNonStandardVarError())
 
     @staticmethod
     def _remove_gene_version(ensemble_ids: pd.Index) -> pd.Index:

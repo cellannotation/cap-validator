@@ -17,17 +17,21 @@ Python tool for validating H5AD AnnData files before uploading to the Cell Annot
 
 ## Installation
 ```bash
-pip install cap_validator
+pip install -U cap-upload-validator
 ```
 
 ## Usage
 ```python
-import your_package_name
+from cap_upload_validator import UploadValidator
 
-your_package_name.do_something()
+
+h5ad_path = "path_to.h5ad"
+
+uv = UploadValidator(h5ad_path)
+uv.validate()
 ```
 
-## CLI Usage (if applicable)
+## CLI Usage
 ```bash
 your-package-command --option
 ```
