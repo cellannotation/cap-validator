@@ -14,6 +14,7 @@ from .errors import (
     AnnDataMissingEmbeddings,
     AnnDataMisingObsColumns,
     AnnDataNonStandardVarError,
+    BadAnnDataFile
 )
 
 logger = logging.getLogger(__name__)
@@ -39,6 +40,9 @@ class UploadValidator:
         """The method validates the input AnnData on the upload stage and raises exceptions if something wrong."""
         logger.debug("Begin anndata file validation...")
 
+        if not self._adata_path.endswith(".h5ad"):
+            raise BadAnnDataFile
+        
         with read_h5ad(self._adata_path, edit=False) as cap_adata:
             cap_adata.read_obs(columns=OBS_COLUMNS_REQUIRED+[ORGANISM_COLUMN])
             cap_adata.read_var(columns=[])
@@ -50,9 +54,9 @@ class UploadValidator:
             self._check_obs(cap_adata)
             self._check_var_index(cap_adata)
 
-            # Check any errors were during validation stage and raise them
-            if self.multi_exception.have_errors():
-                raise self.multi_exception
+        # Check any errors were during validation stage and raise them
+        if self.multi_exception.have_errors():
+            raise self.multi_exception
             
         logger.debug("Finish anndata file validation")
 
