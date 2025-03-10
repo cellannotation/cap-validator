@@ -1,0 +1,36 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "cap_validator"
+version = "0.0.1"
+authors = [
+  { name="R. Mukhin", email="roman@ebookapplications.com" },
+  { name="A. Isaev", email="aisaev@ebookapplications.com" },
+  { name="E. Biederstedt", email="evan.biederstedt@gmail.com" },
+]
+description = "Python tool for validating H5AD AnnData files before uploading to the Cell Annotation Platform."
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+license = "BSD-3-Clause"
+license-files = ["LICEN[CS]E*"]
+dependencies = [
+    "cap-anndata>=0.4.0",
+    "numpy>=2.0.2",
+    "pandas>=2.2.3",
+    "scipy>=1.13.1",
+]
+
+
+[project.urls]
+Homepage = "https://github.com/cellannotation/cap-validator"
+Issues = "https://github.com/cellannotation/cap-validator/issues"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+log_level = "DEBUG"
