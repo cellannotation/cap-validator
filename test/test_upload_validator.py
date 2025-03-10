@@ -101,16 +101,14 @@ def test_obs():
         check_obs(cap_adata, False)
 
 
-def test_var_index():
+def test_var_index():    
     v = UploadValidator(None)
     gene_map = GeneMap.data_frame()
-    n_rows = 100
-    n_genes = 100
-    X = np.ones(shape=(n_rows, n_genes), dtype=np.float32)
-    adata = ad.AnnData(X=X)
     
-    file_path = TMP_DIR / "test_var_index.h5ad"
-
+    adata = ad.AnnData(X=np.eye(10))
+    n_genes = adata.shape[1]
+    
+    file_path = TMP_DIR / "test_adata.h5ad"
     def check_var_index():
         with read_h5ad(file_path, edit=False) as cap_adata:
             cap_adata.read_var()
@@ -119,29 +117,37 @@ def test_var_index():
 
     adata.write_h5ad(filename=file_path)
     
+    # proper organism and genes
     adata.obs[ORGANISM_COLUMN] = EnsemblOrganism.HUMAN.value
     adata.var.index = gene_map.ENSEMBL_gene[:n_genes]
     adata.write_h5ad(filename=file_path)
     check_var_index()
 
+    # proper organism and genes with version suffixes
+    adata.obs[ORGANISM_COLUMN] = EnsemblOrganism.HUMAN.value
     adata.var.index = [f"{g}.{i}" for i, g in enumerate(gene_map.ENSEMBL_gene[:n_genes])]
     adata.write_h5ad(filename=file_path)
     check_var_index()
 
+    # proper organism and bad genes
     adata.var.index = map(str, range(n_genes))
     adata.write_h5ad(filename=file_path)
     try:
         check_var_index()
     except AnnDataNonStandardVarError:
         pass
-    
+    except Exception as e:
+        assert False, f"Unpredicted error: {e}"
+
+    # unsuported organism and bad genes
     adata.obs.organism = 'unsuported'
     adata.write_h5ad(filename=file_path)
     try:
         check_var_index()
     except:
-        assert False, "Wrong validation failure for unsupported organism!"
+        assert False, "Wrong validation failure for unsuported organism!"
 
+    # multiple organisms and non ENSG genes
     adata.obs['organism'] = adata.obs['organism'].cat.add_categories(['new organism'])
     adata.obs.loc['0', 'organism'] = 'new organism'
 
@@ -150,13 +156,17 @@ def test_var_index():
         check_var_index()
     except AnnDataNonStandardVarError:
         pass
+    except Exception as e:
+        assert False, f"Unpredicted error: {e}"
 
+    # multiple organisms and ENSG genes
     adata.var.index = gene_map.ENSEMBL_gene[:n_genes]
+
     adata.write_h5ad(filename=file_path)
     try:
         check_var_index()
     except Exception as e:
-        assert False, f"Unexpected error: {e}"
+        assert False, f"Unpredicted error: {e}"
 
 
 @pytest.mark.parametrize("set_organism", [False, True])
