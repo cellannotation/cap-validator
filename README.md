@@ -1,6 +1,6 @@
 # cap-validator
 
-[![PyPI version](https://img.shields.io/pypi/v/your-package-name)](https://pypi.org/project/your-package-name/)  
+[![PyPI version](https://img.shields.io/pypi/v/cap-upload-validator)](https://pypi.org/project/cap-upload-validator/)  
 [![License](https://img.shields.io/github/license/cellannotation/cap-validator)](https://github.com/cellannotation/cap-validator/blob/main/LICENSE)  
 [![Build Status](https://github.com/cellannotation/cap-validator/actions/workflows/unit_testing.yml/badge.svg)](https://github.com/cellannotation/cap-validator/actions)
 
