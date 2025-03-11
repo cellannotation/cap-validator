@@ -10,9 +10,9 @@
 Python tool for validating H5AD AnnData files before uploading to the Cell Annotation Platform. The same validation code is used in [Cell Annotation Platform](https://celltype.info/) following requirements from the CAP-AnnData schema published [here](https://github.com/cellannotation/cell-annotation-schema/blob/main/docs/cap_anndata_schema.md).
 
 ## Features
-- ✨ Validating all upload requirements and return results at once
+- ✨ Validates all upload requirements and returns results at once
 - 🚀 RAM efficient
-- 🧬 Provides a full list of supported ENSEMBL gene ids for Homo Sapiens and Mus Musculus
+- 🧬 Provides a full list of supported ENSEMBL gene IDs for *Homo sapiens* and *Mus musculus*
 
 
 ## Installation

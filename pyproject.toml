@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "cap_upload_validator"
-version = "0.0.3"
+version = "0.0.4"
 authors = [
   { name="Roman Mukhin" },
   { name="Andrey Isaev" },
