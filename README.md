@@ -21,9 +21,11 @@ pip install -U cap-upload-validator
 ```
 
 ## Usage
+
+### Basic usage
+
 ```python
 from cap_upload_validator import UploadValidator
-
 
 h5ad_path = "path_to.h5ad"
 
@@ -31,30 +33,8 @@ uv = UploadValidator(h5ad_path)
 uv.validate()
 ```
 
-## CLI Usage
-```bash
-your-package-command --option
-```
+Full documentation could be found in [GitHub Wiki](https://github.com/cellannotation/cap-validator/wiki)
 
-## Examples
-```python
-from your_package_name import FeatureClass
-
-obj = FeatureClass(param="value")
-obj.run()
-```
-
-## Development
-
-## Contributing
-1. Fork the repo
-2. Create a new branch (`git checkout -b feature-branch`)
-3. Make your changes and commit (`git commit -m "Description of changes"`)
-4. Push to the branch (`git push origin feature-branch`)
-5. Open a Pull Request
 
 ## License
 [BSD 3-Clause License](LICENSE)
-
-## Acknowledgments
-- List any contributors, inspirations, or resources here.

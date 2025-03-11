@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "cap_upload_validator"
-version = "0.0.2"
+version = "0.0.3"
 authors = [
   { name="Roman Mukhin" },
   { name="Andrey Isaev" },
@@ -31,7 +31,7 @@ Homepage = "https://celltype.info/"
 GitHub = "https://github.com/cellannotation/cap-validator"
 Issues = "https://github.com/cellannotation/cap-validator/issues"
 Changelog = "https://github.com/cellannotation/cap-validator/blob/main/CHANGELOG.md"
-Documentation = "https://github.com/cellannotation/cap-validator/blob/main/README.md"
+Documentation = "https://github.com/cellannotation/cap-validator/wiki"
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
