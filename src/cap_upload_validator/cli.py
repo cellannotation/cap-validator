@@ -6,15 +6,16 @@ import argparse
 
 descrption = \
 """
-CLI tool to validate AnnData h5ad file before the upload to Cell Annotation Platform.
-The validator will raise CAP specific errors if file is not follow CAP AnnData Schema
-from https://github.com/cellannotation/cell-annotation-schema/blob/main/docs/cap_anndata_schema.md
+CLI tool to validate an AnnData H5AD file before uploading to the Cell Annotation Platform.
+The validator will raise CAP-specific errors if the file does not follow the CAP AnnData Schema,
+as defined in:
+https://github.com/cellannotation/cell-annotation-schema/blob/main/docs/cap_anndata_schema.md
 
-Full documentation with the list of possible validation errors is published in
+Full documentation, including a list of possible validation errors, is available at:
 https://github.com/cellannotation/cap-validator/wiki
 
 Usage Example:
-capval path/to/anndata.h5ad
+    `capval path/to/anndata.h5ad`
 """
 
 

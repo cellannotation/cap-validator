@@ -57,7 +57,9 @@ class CapMultiException(CapException):
     def __str__(self) -> str:
         own_str = super().__str__()
         res_list = [own_str] + self.ex_list
-        return "\n".join(map(str, res_list))
+        res_message = "\n".join(map(str, res_list))
+        res_message += "\nFor details visit: \n\thttps://github.com/cellannotation/cap-validator/wiki/Validation-Errors"
+        return res_message
 
     def have_errors(self) -> bool:
         return len(self.ex_list) > 0
@@ -88,8 +90,7 @@ class AnnDataMisingObsColumns(CapException):
     message = \
         """
             Required obs column(s) missing: file must contain 
-            'assay', 'disease', 'organism' and 'tissue' fields with valid values, 
-            see (link to obs section of upload requirements) for more information.
+            'assay', 'disease', 'organism' and 'tissue' fields with valid values.
         """
 
 
