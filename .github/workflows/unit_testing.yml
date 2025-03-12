@@ -40,6 +40,6 @@ jobs:
         pytest test/
     - name: Test cli interface
       run: |
-        uv pip install .
+        uv pip install --system .
         capval --help
         capval test/data/valid.h5ad
