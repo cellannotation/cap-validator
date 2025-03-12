@@ -37,3 +37,6 @@ Documentation = "https://github.com/cellannotation/cap-validator/wiki"
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 log_level = "DEBUG"
+
+[project.scripts]
+capval = "cap_upload_validator.cli:validate"
