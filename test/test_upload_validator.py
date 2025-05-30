@@ -1,5 +1,6 @@
 import pytest
 import numpy as np
+import pandas as pd
 import anndata as ad
 import scipy.sparse as sp
 from pathlib import Path
@@ -194,3 +195,25 @@ def test_validator(set_organism):
         assert len(e.ex_list) == expected_errors, "Wrong multi exception content!"
     except Exception as e:
         assert False, "Unpredicted exception while the validation!"
+
+
+def test_df_in_obsm():
+    file_path = TMP_DIR / "test_df_in_obsm"
+    adata = ad.AnnData(X=np.eye(10)) 
+    adata.obsm["X_valid"] = np.ones((adata.shape[0], 2))
+    adata.obsm["X_df"] = pd.DataFrame(
+        data = {
+            "x": np.arange(adata.shape[0]),
+            "y": np.arange(adata.shape[0]),
+        },
+        index=adata.obs.index,
+    )
+    adata.obsm["_df"] = adata.obs
+    adata.write_h5ad(file_path)
+
+    validator = UploadValidator(file_path)
+    
+    with read_h5ad(file_path) as adata:
+        # should be no errors
+        validator._check_obsm(adata)
+    
