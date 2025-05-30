@@ -1,5 +1,6 @@
 import pytest
 import numpy as np
+import pandas as pd
 import anndata as ad
 import scipy.sparse as sp
 from pathlib import Path
@@ -194,3 +195,22 @@ def test_validator(set_organism):
         assert len(e.ex_list) == expected_errors, "Wrong multi exception content!"
     except Exception as e:
         assert False, "Unpredicted exception while the validation!"
+
+
+def test_df_in_obsm():
+    file_path = TMP_DIR / "test_df_in_obsm"
+    adata = ad.AnnData(X=np.eye(10))
+    adata.obsm["X_df"] = pd.DataFrame(
+        data = {
+            "x": 1,
+            "y": 2,
+        },
+        index=adata.obs.index,
+    )
+    adata.write_h5ad(file_path)
+    assert adata.obsm["X_df"].shape == (10,2)
+    v = UploadValidator(file_path)
+    v._multi_exception.raise_on_append = True
+    with pytest.raises(AnnDataMissingEmbeddings):
+        with read_h5ad(file_path) as adata:
+            v._check_obsm(adata)
