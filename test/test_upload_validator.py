@@ -199,21 +199,18 @@ def test_validator(set_organism):
 
 def test_df_in_obsm():
     file_path = TMP_DIR / "test_df_in_obsm"
-    adata = ad.AnnData(X=np.eye(10)) 
-    adata.obsm["X_valid"] = np.ones((adata.shape[0], 2))
+    adata = ad.AnnData(X=np.eye(10))
     adata.obsm["X_df"] = pd.DataFrame(
         data = {
-            "x": np.arange(adata.shape[0]),
-            "y": np.arange(adata.shape[0]),
+            "x": 1,
+            "y": 2,
         },
         index=adata.obs.index,
     )
-    adata.obsm["_df"] = adata.obs
     adata.write_h5ad(file_path)
-
-    validator = UploadValidator(file_path)
-    
-    with read_h5ad(file_path) as adata:
-        # should be no errors
-        validator._check_obsm(adata)
-    
+    assert adata.obsm["X_df"].shape == (10,2)
+    v = UploadValidator(file_path)
+    v._multi_exception.raise_on_append = True
+    with pytest.raises(AnnDataMissingEmbeddings):
+        with read_h5ad(file_path) as adata:
+            v._check_obsm(adata)

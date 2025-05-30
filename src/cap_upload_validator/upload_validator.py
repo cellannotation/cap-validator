@@ -3,6 +3,7 @@ import numpy as np
 from scipy.sparse import issparse
 from cap_anndata import CapAnnData, read_h5ad
 import logging
+from h5py import Dataset
 
 from .gene_mapping import (
     GeneMap,
@@ -118,7 +119,9 @@ class UploadValidator:
 
         for field in cap_adata.obsm_keys():
             if field.startswith(EMBEDDING_PREFIX):
-                if cap_adata.obsm[field].shape == (n_cells, 2):
+                entity = cap_adata.obsm[field]
+                if isinstance(entity, Dataset) and entity.shape == (n_cells, 2):
+                    # looking for dense matrix of N x 2 shape 
                     return True
 
         logger.debug(f"Embeddings not found in obsm_keys = {cap_adata.obsm_keys()}!")
