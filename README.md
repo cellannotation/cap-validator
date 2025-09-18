@@ -5,7 +5,9 @@
 
 ## Overview
 
-Python tool for validating H5AD AnnData files before uploading to the Cell Annotation Platform. The same validation code is used in [Cell Annotation Platform](https://celltype.info/) following requirements from the CAP-AnnData schema published [here](https://github.com/cellannotation/cell-annotation-schema/blob/main/docs/cap_anndata_schema.md).
+Python tool for validating H5AD AnnData files before uploading to the Cell Annotation Platform. The same validation code is used in [Cell Annotation Platform](https://celltype.info/) following requirements from the CAP-AnnData schema published [here](https://github.com/cellannotation/cap-data-schema/blob/main/cap-anndata-schema.md).
+
+Full documentation could be found in the [GitHub Wiki](https://github.com/cellannotation/cap-validator/wiki)
 
 ## Features
 - ✨ Validates all upload requirements and returns results at once
@@ -31,7 +33,6 @@ uv = UploadValidator(h5ad_path)
 uv.validate()
 ```
 
-Full documentation could be found in [GitHub Wiki](https://github.com/cellannotation/cap-validator/wiki)
 
 ### CLI interface
 ```console
