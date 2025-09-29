@@ -144,7 +144,7 @@ class UploadValidator:
 
             if not (col_in_obs or ont_id_col_in_obs):
                 logger.debug(f"Column {col} is missing in .obs!")
-                self._multi_exception.append(AnnDataMissingObsColumns("{col} column is missing in .obs!"))
+                self._multi_exception.append(AnnDataMissingObsColumns(f"{col} column is missing in .obs!"))
                 return
             else:
                 if col_in_obs:
