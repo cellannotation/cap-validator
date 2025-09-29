@@ -6,14 +6,16 @@ import scipy.sparse as sp
 from pathlib import Path
 import tempfile
 from cap_anndata import CapAnnDataDF, read_h5ad
+from contextlib import nullcontext
 
-from cap_upload_validator.upload_validator import UploadValidator, OBS_COLUMNS_REQUIRED, ORGANISM_COLUMN
+from cap_upload_validator.upload_validator import UploadValidator, GENERAL_METADATA, ORGANISM_COLUMN
 from cap_upload_validator.gene_mapping import GeneMap, EnsemblOrganism
 from cap_upload_validator.errors import (
     AnnDataMissingEmbeddings,
-    AnnDataMisingObsColumns,
+    AnnDataMissingObsColumns,
     AnnDataNonStandardVarError,
-    CapMultiException
+    CapMultiException,
+    AnnDataNoneInGeneralMetadata,
 )
 
 TMP_DIR = Path(tempfile.mkdtemp())
@@ -73,7 +75,7 @@ def test_obs():
     file_path = TMP_DIR / "test_obs.h5ad"
 
     adata = ad.AnnData(X=np.eye(10))
-    for col in OBS_COLUMNS_REQUIRED:
+    for col in GENERAL_METADATA:
         adata.obs[col] = "test_value"
     
     adata.write_h5ad(file_path)
@@ -89,12 +91,12 @@ def test_obs():
                 v._check_obs(ca)
                 if not correct_expected:
                     assert False, "Must not be correct obs!"
-            except AnnDataMisingObsColumns:
+            except AnnDataMissingObsColumns:
                 assert not correct_expected, "Unexpected result"
 
         check_obs(cap_adata, True)
 
-        for col in OBS_COLUMNS_REQUIRED:
+        for col in GENERAL_METADATA:
             cap_adata.obs = CapAnnDataDF.from_df(df.drop(col, axis=1, inplace=False))
             check_obs(cap_adata, False)
 
@@ -214,3 +216,36 @@ def test_df_in_obsm():
     with pytest.raises(AnnDataMissingEmbeddings):
         with read_h5ad(file_path) as adata:
             v._check_obsm(adata)
+
+
+@pytest.mark.parametrize("with_none", [True, False])
+@pytest.mark.parametrize("names_provided", [True, False])
+def test_ontology_id_instead_general_metadata(names_provided, with_none):
+    file_path = TMP_DIR / "test_ontology_id_instead_general_metadata.h5ad"
+    adata = ad.AnnData(X=np.eye(10))
+
+    for col in GENERAL_METADATA:
+        ont_id_col = col + "_ontology_term_id"
+        adata.obs[ont_id_col] = ont_id_col
+        if names_provided:
+            adata.obs[col] = col
+    
+    for col in adata.obs.columns:
+        adata.obs[col] = pd.Categorical(adata.obs[col])
+
+    if with_none:
+        adata.obs.iloc[5:, :] = None
+
+    adata.write_h5ad(file_path)
+    v = UploadValidator(file_path)
+    v._multi_exception.raise_on_append = True
+
+    if with_none:
+        context = pytest.raises(AnnDataNoneInGeneralMetadata)
+    else:
+        context = nullcontext()
+    
+    with read_h5ad(file_path) as adata:
+        with context:
+            adata.read_obs(GENERAL_METADATA)
+            v._check_obs(adata)

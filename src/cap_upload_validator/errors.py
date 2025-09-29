@@ -85,14 +85,23 @@ class AnnDataMissingEmbeddings(CapException):
         """
 
 
-class AnnDataMisingObsColumns(CapException):
-    name = "AnnDataMisingObsColumns"
+class AnnDataMissingObsColumns(CapException):
+    name = "AnnDataMissingObsColumns"
     message = \
         """
             Required obs column(s) missing: file must contain 
-            'assay', 'disease', 'organism' and 'tissue' fields with valid values.
+            'assay', 'disease', 'organism' and 'tissue' fields or
+            corresponding '<x>_ontology_term_id' fields with valid values.
         """
 
+class AnnDataNoneInGeneralMetadata(CapException):
+    name = "AnnDataNoneInGeneralMetadata"
+    message = \
+        """
+            Required obs column(s) contain empty or None values: file must contain 
+            'assay', 'disease', 'organism' and 'tissue' fields or
+            corresponding '<x>_ontology_term_id' fields with valid values.
+        """
 
 class AnnDataNonStandardVarError(CapException):
     name = "AnnDataNonStandardVarError"

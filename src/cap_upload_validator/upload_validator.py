@@ -13,9 +13,10 @@ from .errors import (
     CapMultiException,
     AnnDataFileMissingCountMatrix,
     AnnDataMissingEmbeddings,
-    AnnDataMisingObsColumns,
+    AnnDataMissingObsColumns,
     AnnDataNonStandardVarError,
-    BadAnnDataFile
+    BadAnnDataFile,
+    AnnDataNoneInGeneralMetadata,
 )
 
 logger = logging.getLogger(__name__)
@@ -23,8 +24,7 @@ logger = logging.getLogger(__name__)
 MAX_OBS_ROWS_TO_CHECK = 100
 EMBEDDING_PREFIX = "X_"
 ORGANISM_COLUMN = "organism"
-OBS_COLUMNS_REQUIRED = ["assay", "disease", ORGANISM_COLUMN, "tissue"]
-
+GENERAL_METADATA = ["assay", "disease", ORGANISM_COLUMN, "tissue"]
 
 class UploadValidator:
 
@@ -56,7 +56,7 @@ class UploadValidator:
             raise BadAnnDataFile
         
         with read_h5ad(self._adata_path, edit=False) as cap_adata:
-            cap_adata.read_obs(columns=OBS_COLUMNS_REQUIRED+[ORGANISM_COLUMN])
+            cap_adata.read_obs(columns=GENERAL_METADATA)  # TODO: read all columns?
             cap_adata.read_var(columns=[])
             if cap_adata.raw is not None:
                 cap_adata.raw.read_var(columns=[])
@@ -129,23 +129,41 @@ class UploadValidator:
 
     def _check_obs(self, cap_adata: CapAnnData) -> None:
         logger.debug("Start checking obs")
-        obs = cap_adata.obs
-        obs_columns = set(obs.columns)
-        logger.debug(f"Checking obs_columns = {obs_columns} for required {OBS_COLUMNS_REQUIRED}!")
+        obs_keys = cap_adata.obs_keys()
+        logger.debug(f"Checking obs_columns = {obs_keys} for required {GENERAL_METADATA}!")
         
-        if obs is None or not set(OBS_COLUMNS_REQUIRED).issubset(obs_columns):
-            self._multi_exception.append(AnnDataMisingObsColumns())
+        if cap_adata.obs is None or not obs_keys:
+            logger.warning(".obs is missing!")
+            self._multi_exception.append(AnnDataMissingObsColumns())
             return
 
-        for column in OBS_COLUMNS_REQUIRED:
-            seria = obs[column]
-            # Replace spaces or empty lines with NaN
-            seria = seria.replace(r'^\s*$', np.nan, regex=True)
-            # Check that no NaN in column
-            if not pd.notna(seria).all():
-                self._multi_exception.append(AnnDataMisingObsColumns())
+        for col in GENERAL_METADATA:
+            ont_id_col = f"{col}_ontology_term_id"
+            col_in_obs = col in obs_keys
+            ont_id_col_in_obs = ont_id_col in obs_keys
+
+            if not (col_in_obs or ont_id_col_in_obs):
+                logger.debug(f"Column {col} is missing in .obs!")
+                self._multi_exception.append(AnnDataMissingObsColumns(f"{col} column is missing in .obs!"))
                 return
+            else:
+                if col_in_obs:
+                    if not self._check_df_col_for_none(cap_adata.obs[col]):
+                        logger.debug(f"Column {col} contains None or empty values in .obs!")
+                        self._multi_exception.append(AnnDataNoneInGeneralMetadata(f"{col} column contains None or empty values in .obs!"))
+                        return
+                if ont_id_col_in_obs:
+                    cap_adata.read_obs([ont_id_col])
+                    if not self._check_df_col_for_none(cap_adata.obs[ont_id_col]):
+                        logger.debug(f"Column {ont_id_col} contains None or empty values in .obs!")
+                        self._multi_exception.append(AnnDataNoneInGeneralMetadata(f"{ont_id_col} column contains None or empty values in .obs!"))
+                        return
         logger.debug("Finished checking obs!")
+
+    @staticmethod
+    def _check_df_col_for_none(series: pd.Series) -> bool:
+        series = series.replace(r'^\s*$', np.nan, regex=True)
+        return pd.notna(series).all()
 
     def _check_var_index(self, cap_adata: CapAnnData) -> None:
         logger.debug("Start checking var index...")
