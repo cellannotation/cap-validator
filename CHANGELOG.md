@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+### Added 
+- New exception `AnnDataNoneInGeneralMetadata` to handle cases where required metadata fields contain None or empty values.
+
+### Changed
+- General metadata check in `UploadValidator` now checks if any of general metadata or its ontology term ID exists in the `obs` dataframe. For example, the validator will pass if either `tissue` or `tissue_ontology_term_id` exists and non empty. Otherwise, the validator will raise `AnnDataMissingObsColumns`.
+
+
 ## [1.2.0] - 2025-05-30
 ### Added
 - Strict requirement to have dense matrix with embeddings in obsm. Data Frames and sparse matrices will be ignored.
