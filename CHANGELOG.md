@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [1.3.0] - 2025-09-29
 ### Added 
 - New exception `AnnDataNoneInGeneralMetadata` to handle cases where required metadata fields contain None or empty values.
 
