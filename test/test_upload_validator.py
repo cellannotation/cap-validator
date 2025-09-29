@@ -234,5 +234,5 @@ def test_ontology_id_instead_general_metadata(names_provided):
     v = UploadValidator(file_path)
     v._multi_exception.raise_on_append = True
     with read_h5ad(file_path) as adata:
-        adata.read_obs()
+        adata.read_obs(GENERAL_METADATA)
         v._check_obs(adata)

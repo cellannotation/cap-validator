@@ -93,6 +93,13 @@ class AnnDataMisingObsColumns(CapException):
             'assay', 'disease', 'organism' and 'tissue' fields with valid values.
         """
 
+class AnnDataNoneInGeneralMetadata(CapException):
+    name = "AnnDataNoneInGeneralMetadata"
+    message = \
+        """
+            Required obs column(s) contain empty or None values: file must contain 
+            'assay', 'disease', 'organism' and 'tissue' fields with valid values.
+        """
 
 class AnnDataNonStandardVarError(CapException):
     name = "AnnDataNonStandardVarError"
