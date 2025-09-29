@@ -13,7 +13,7 @@ from .errors import (
     CapMultiException,
     AnnDataFileMissingCountMatrix,
     AnnDataMissingEmbeddings,
-    AnnDataMisingObsColumns,
+    AnnDataMissingObsColumns,
     AnnDataNonStandardVarError,
     BadAnnDataFile,
     AnnDataNoneInGeneralMetadata,
@@ -134,7 +134,7 @@ class UploadValidator:
         
         if cap_adata.obs is None or not obs_keys:
             logger.warning(".obs is missing!")
-            self._multi_exception.append(AnnDataMisingObsColumns())
+            self._multi_exception.append(AnnDataMissingObsColumns())
             return
 
         for col in GENERAL_METADATA:
@@ -144,7 +144,7 @@ class UploadValidator:
 
             if not (col_in_obs or ont_id_col_in_obs):
                 logger.debug(f"Column {col} is missing in .obs!")
-                self._multi_exception.append(AnnDataMisingObsColumns("{col} column is missing in .obs!"))
+                self._multi_exception.append(AnnDataMissingObsColumns("{col} column is missing in .obs!"))
                 return
             else:
                 if col_in_obs:

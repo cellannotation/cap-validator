@@ -12,7 +12,7 @@ from cap_upload_validator.upload_validator import UploadValidator, GENERAL_METAD
 from cap_upload_validator.gene_mapping import GeneMap, EnsemblOrganism
 from cap_upload_validator.errors import (
     AnnDataMissingEmbeddings,
-    AnnDataMisingObsColumns,
+    AnnDataMissingObsColumns,
     AnnDataNonStandardVarError,
     CapMultiException,
     AnnDataNoneInGeneralMetadata,
@@ -91,7 +91,7 @@ def test_obs():
                 v._check_obs(ca)
                 if not correct_expected:
                     assert False, "Must not be correct obs!"
-            except AnnDataMisingObsColumns:
+            except AnnDataMissingObsColumns:
                 assert not correct_expected, "Unexpected result"
 
         check_obs(cap_adata, True)
