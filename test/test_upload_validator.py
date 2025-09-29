@@ -7,7 +7,7 @@ from pathlib import Path
 import tempfile
 from cap_anndata import CapAnnDataDF, read_h5ad
 
-from cap_upload_validator.upload_validator import UploadValidator, OBS_COLUMNS_REQUIRED, ORGANISM_COLUMN
+from cap_upload_validator.upload_validator import UploadValidator, GENERAL_METADATA, ORGANISM_COLUMN
 from cap_upload_validator.gene_mapping import GeneMap, EnsemblOrganism
 from cap_upload_validator.errors import (
     AnnDataMissingEmbeddings,
@@ -73,7 +73,7 @@ def test_obs():
     file_path = TMP_DIR / "test_obs.h5ad"
 
     adata = ad.AnnData(X=np.eye(10))
-    for col in OBS_COLUMNS_REQUIRED:
+    for col in GENERAL_METADATA:
         adata.obs[col] = "test_value"
     
     adata.write_h5ad(file_path)
@@ -94,7 +94,7 @@ def test_obs():
 
         check_obs(cap_adata, True)
 
-        for col in OBS_COLUMNS_REQUIRED:
+        for col in GENERAL_METADATA:
             cap_adata.obs = CapAnnDataDF.from_df(df.drop(col, axis=1, inplace=False))
             check_obs(cap_adata, False)
 
@@ -214,3 +214,25 @@ def test_df_in_obsm():
     with pytest.raises(AnnDataMissingEmbeddings):
         with read_h5ad(file_path) as adata:
             v._check_obsm(adata)
+
+
+@pytest.mark.parametrize("names_provided", [True, False])
+def test_ontology_id_instead_general_metadata(names_provided):
+    file_path = TMP_DIR / "test_ontology_id_instead_general_metadata.h5ad"
+    adata = ad.AnnData(X=np.eye(10))
+
+    for col in GENERAL_METADATA:
+        ont_id_col = col + "_ontology_term_id"
+        adata.obs[ont_id_col] = ont_id_col
+        if names_provided:
+            adata.obs[col] = col
+    
+    for col in adata.obs.columns:
+        adata.obs[col] = pd.Categorical(adata.obs[col])
+
+    adata.write_h5ad(file_path)
+    v = UploadValidator(file_path)
+    v._multi_exception.raise_on_append = True
+    with read_h5ad(file_path) as adata:
+        adata.read_obs()
+        v._check_obs(adata)
