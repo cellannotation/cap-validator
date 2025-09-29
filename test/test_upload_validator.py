@@ -6,6 +6,7 @@ import scipy.sparse as sp
 from pathlib import Path
 import tempfile
 from cap_anndata import CapAnnDataDF, read_h5ad
+from contextlib import nullcontext
 
 from cap_upload_validator.upload_validator import UploadValidator, GENERAL_METADATA, ORGANISM_COLUMN
 from cap_upload_validator.gene_mapping import GeneMap, EnsemblOrganism
@@ -13,7 +14,8 @@ from cap_upload_validator.errors import (
     AnnDataMissingEmbeddings,
     AnnDataMisingObsColumns,
     AnnDataNonStandardVarError,
-    CapMultiException
+    CapMultiException,
+    AnnDataNoneInGeneralMetadata,
 )
 
 TMP_DIR = Path(tempfile.mkdtemp())
@@ -216,8 +218,9 @@ def test_df_in_obsm():
             v._check_obsm(adata)
 
 
+@pytest.mark.parametrize("with_none", [True, False])
 @pytest.mark.parametrize("names_provided", [True, False])
-def test_ontology_id_instead_general_metadata(names_provided):
+def test_ontology_id_instead_general_metadata(names_provided, with_none):
     file_path = TMP_DIR / "test_ontology_id_instead_general_metadata.h5ad"
     adata = ad.AnnData(X=np.eye(10))
 
@@ -230,9 +233,19 @@ def test_ontology_id_instead_general_metadata(names_provided):
     for col in adata.obs.columns:
         adata.obs[col] = pd.Categorical(adata.obs[col])
 
+    if with_none:
+        adata.obs.iloc[5:, :] = None
+
     adata.write_h5ad(file_path)
     v = UploadValidator(file_path)
     v._multi_exception.raise_on_append = True
+
+    if with_none:
+        context = pytest.raises(AnnDataNoneInGeneralMetadata)
+    else:
+        context = nullcontext()
+    
     with read_h5ad(file_path) as adata:
-        adata.read_obs(GENERAL_METADATA)
-        v._check_obs(adata)
+        with context:
+            adata.read_obs(GENERAL_METADATA)
+            v._check_obs(adata)
