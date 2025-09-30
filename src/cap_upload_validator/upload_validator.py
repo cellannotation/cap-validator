@@ -192,20 +192,21 @@ class UploadValidator:
         # Check the number of organisms in the dataset
         known_organisms = [HomoSapiens, MusMusculus] # Only Human and Mouse supported this moment
         known_organisms_values = {ko.name for ko in known_organisms}
-        if ORGANISM_COLUMN in cap_adata.obs.columns:
+        obs_keys = cap_adata.obs_keys()
+        if ORGANISM_COLUMN in obs_keys:
             dataset_organisms = cap_adata.obs[ORGANISM_COLUMN].unique().tolist()
             if "" in dataset_organisms:
                 dataset_organisms.remove("")
             dataset_organisms = list(map(str_to_organism, dataset_organisms))
-            
-        elif ORGANISM_ONT_ID_COLUMN in cap_adata.obs.columns:
+        elif ORGANISM_ONT_ID_COLUMN in obs_keys:
+            if ORGANISM_ONT_ID_COLUMN not in cap_adata.obs.columns:
+                cap_adata.read_obs(columns=[ORGANISM_ONT_ID_COLUMN])
             org_ont_ids = cap_adata.obs[ORGANISM_ONT_ID_COLUMN].unique().tolist()
             if "" in org_ont_ids:
                 org_ont_ids.remove("")
             dataset_organisms = list(map(ontology_id_to_organism, org_ont_ids))
         else:
             dataset_organisms = []
-
         logger.debug(f"Organism(s) in dataset = {dataset_organisms}, known organisms = {known_organisms_values}")
        
         # Check ENSEMBL ids for supported organism

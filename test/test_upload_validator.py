@@ -8,7 +8,12 @@ import tempfile
 from cap_anndata import CapAnnDataDF, read_h5ad
 from contextlib import nullcontext
 
-from cap_upload_validator.upload_validator import UploadValidator, GENERAL_METADATA, ORGANISM_COLUMN
+from cap_upload_validator.upload_validator import (
+    UploadValidator,
+    GENERAL_METADATA,
+    ORGANISM_COLUMN,
+    ORGANISM_ONT_ID_COLUMN,
+)
 from cap_upload_validator.gene_mapping import (
     GeneMap,
     HomoSapiens,
@@ -178,12 +183,14 @@ def test_var_index():
         assert False, f"Unpredicted error: {e}"
 
 
-@pytest.mark.parametrize("set_organism", [False, True])
+@pytest.mark.parametrize("set_organism", [False, True, "ont"])
 def test_validator(set_organism):
     x = np.eye(10) + 0.1  # not a counts
     adata = ad.AnnData(X=x) 
-    if set_organism:
+    if set_organism is True:
         adata.obs[ORGANISM_COLUMN] = HomoSapiens.name
+    elif set_organism == "ont":
+        adata.obs[ORGANISM_ONT_ID_COLUMN] = HomoSapiens.ontology_id
     
     file_path = TMP_DIR / "bad_adata.h5ad"
 
