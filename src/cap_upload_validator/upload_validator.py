@@ -7,7 +7,12 @@ from h5py import Dataset
 
 from .gene_mapping import (
     GeneMap,
-    EnsemblOrganism,
+    HomoSapiens,
+    MusMusculus,
+    MultiSpecies,
+    Organism,
+    str_to_organism,
+    ontology_id_to_organism,
 )
 from .errors import (
     CapMultiException,
@@ -24,6 +29,7 @@ logger = logging.getLogger(__name__)
 MAX_OBS_ROWS_TO_CHECK = 100
 EMBEDDING_PREFIX = "X_"
 ORGANISM_COLUMN = "organism"
+ORGANISM_ONT_ID_COLUMN = f"{ORGANISM_COLUMN}_ontology_term_id"
 GENERAL_METADATA = ["assay", "disease", ORGANISM_COLUMN, "tissue"]
 
 class UploadValidator:
@@ -33,7 +39,7 @@ class UploadValidator:
         self._adata_path = adata_path
         # Create container to raise a multiple errors for client
         self._multi_exception = CapMultiException()    
-        self._organism = None  
+        self._organism: Organism = None  
         self._ensembl_ids = None
 
     @property
@@ -184,29 +190,36 @@ class UploadValidator:
                 return
 
         # Check the number of organisms in the dataset
-        known_organisms = {EnsemblOrganism.HUMAN, EnsemblOrganism.MOUSE} # Only Human and Mouse supported this moment
-        known_organisms_values = {ko.value for ko in known_organisms}
+        known_organisms = [HomoSapiens, MusMusculus] # Only Human and Mouse supported this moment
+        known_organisms_values = {ko.name for ko in known_organisms}
         if ORGANISM_COLUMN in cap_adata.obs.columns:
-            dataset_organisms = cap_adata.obs[ORGANISM_COLUMN].unique()
-            dataset_organisms = set(dataset_organisms)
+            dataset_organisms = cap_adata.obs[ORGANISM_COLUMN].unique().tolist()
             if "" in dataset_organisms:
                 dataset_organisms.remove("")
+            dataset_organisms = list(map(str_to_organism, dataset_organisms))
+            
+        elif ORGANISM_ONT_ID_COLUMN in cap_adata.obs.columns:
+            org_ont_ids = cap_adata.obs[ORGANISM_ONT_ID_COLUMN].unique().tolist()
+            if "" in org_ont_ids:
+                org_ont_ids.remove("")
+            dataset_organisms = list(map(ontology_id_to_organism, org_ont_ids))
         else:
-            dataset_organisms = set()
-        
+            dataset_organisms = []
+
         logger.debug(f"Organism(s) in dataset = {dataset_organisms}, known organisms = {known_organisms_values}")
        
         # Check ENSEMBL ids for supported organism
         if len(dataset_organisms) == 1:
-            organism = list(dataset_organisms)[0]
+            organism = dataset_organisms[0]
             self._organism = organism
-            if organism in known_organisms_values:
+            if organism.name in known_organisms_values:
                 logger.debug("There is the only known organisms in dataset, so we must check for Unsemble IDs in var.index!")
                 self._validate_gene_ids(ens_ids=clean_index, organism=organism)
             else:
                 logger.debug("Unknown organisms in dataset found, index var validation skipped!")
         elif len(dataset_organisms) > 1:
-            self._organism = EnsemblOrganism.MULTI_SPECIES.value
+            logger.debug("There are multiple organisms in dataset")
+            self._organism = MultiSpecies
             self._validate_gene_ids(
                 ens_ids=clean_index,
                 organism=self._organism,
@@ -218,7 +231,7 @@ class UploadValidator:
             ens_ids: pd.Series,
             organism: str,
         ) -> None:
-        if not pd.api.types.is_any_real_numeric_dtype(ens_ids) and not ens_ids.empty: 
+        if not (ens_ids.empty or pd.api.types.is_any_real_numeric_dtype(ens_ids)) : 
             # Check genes with gene maps
             df = GeneMap.data_frame(organisms=organism)
             if not ens_ids.isin(df['ENSEMBL_gene']).all():

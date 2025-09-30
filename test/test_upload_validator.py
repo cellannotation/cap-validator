@@ -9,7 +9,13 @@ from cap_anndata import CapAnnDataDF, read_h5ad
 from contextlib import nullcontext
 
 from cap_upload_validator.upload_validator import UploadValidator, GENERAL_METADATA, ORGANISM_COLUMN
-from cap_upload_validator.gene_mapping import GeneMap, EnsemblOrganism
+from cap_upload_validator.gene_mapping import (
+    GeneMap,
+    HomoSapiens,
+    MusMusculus,
+    MultiSpecies,
+    UnsupportedOrganism,
+)
 from cap_upload_validator.errors import (
     AnnDataMissingEmbeddings,
     AnnDataMissingObsColumns,
@@ -121,13 +127,13 @@ def test_var_index():
     adata.write_h5ad(filename=file_path)
     
     # proper organism and genes
-    adata.obs[ORGANISM_COLUMN] = EnsemblOrganism.HUMAN.value
+    adata.obs[ORGANISM_COLUMN] = HomoSapiens.name
     adata.var.index = gene_map.ENSEMBL_gene[:n_genes]
     adata.write_h5ad(filename=file_path)
     check_var_index()
 
     # proper organism and genes with version suffixes
-    adata.obs[ORGANISM_COLUMN] = EnsemblOrganism.HUMAN.value
+    adata.obs[ORGANISM_COLUMN] = HomoSapiens.name
     adata.var.index = [f"{g}.{i}" for i, g in enumerate(gene_map.ENSEMBL_gene[:n_genes])]
     adata.write_h5ad(filename=file_path)
     check_var_index()
@@ -177,7 +183,7 @@ def test_validator(set_organism):
     x = np.eye(10) + 0.1  # not a counts
     adata = ad.AnnData(X=x) 
     if set_organism:
-        adata.obs[ORGANISM_COLUMN] = EnsemblOrganism.HUMAN.value
+        adata.obs[ORGANISM_COLUMN] = HomoSapiens.name
     
     file_path = TMP_DIR / "bad_adata.h5ad"
 
