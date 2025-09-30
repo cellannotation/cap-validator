@@ -1,4 +1,4 @@
-from enum import Enum
+from dataclasses import dataclass
 import pandas as pd
 from pathlib import Path
 
@@ -7,59 +7,58 @@ HUMAN_GENE_MAP_PATH = HERE / "data/homo_sapiens.csv"
 MOUSE_GENE_MAP_PATH = HERE / "data/mus_musculus.csv"
 
 
-class EnsemblOrganism(Enum):
-    HUMAN = "Homo sapiens"
-    MOUSE = "Mus musculus"
-    MULTI_SPECIES = "Multi species"
+@dataclass(frozen=True)
+class _BasicOrganism:
+    name: str
+    ontology_id: str | None
+    gene_prefix: str | None
+    gene_map_path: str | None
 
-    @staticmethod
-    def from_str(value):
-        if value == EnsemblOrganism.HUMAN.value:
-            return EnsemblOrganism.HUMAN
-        if value == EnsemblOrganism.MOUSE.value:
-            return EnsemblOrganism.MOUSE
-        if value == EnsemblOrganism.MULTI_SPECIES.value:
-            return EnsemblOrganism.MULTI_SPECIES
-    
-    def prefix(self):
-        if self.value in [
-            EnsemblOrganism.HUMAN.value,
-            EnsemblOrganism.MULTI_SPECIES.value,
-        ]:
-            return "ENSG"
-        if self.value == EnsemblOrganism.MOUSE.value:
-            return "ENSMUSG"
+@dataclass(frozen=True)
+class HomoSapiens(_BasicOrganism):
+    name = "Homo sapiens"
+    ontology_id = "NCBITaxon:9606"
+    gene_prefix = "ENSG"
+    gene_map_path = HUMAN_GENE_MAP_PATH
 
-    def map_file_name(self):
-        if self.value in [
-            EnsemblOrganism.HUMAN.value,
-            EnsemblOrganism.MULTI_SPECIES.value,
-        ]:
-            return HUMAN_GENE_MAP_PATH
-        if self.value == EnsemblOrganism.MOUSE.value:
-            return MOUSE_GENE_MAP_PATH
+@dataclass(frozen=True)
+class MusMusculus(_BasicOrganism):
+    name = "Mus musculus"
+    ontology_id = "NCBITaxon:10090"
+    gene_prefix = "ENSMUSG"
+    gene_map_path = MOUSE_GENE_MAP_PATH
 
-    @staticmethod
-    def supported(organism: str) -> bool:
-        return organism in (o.value for o in EnsemblOrganism)
+@dataclass(frozen=True)
+class MultiSpecies(HomoSapiens):
+    name = "Multi species"
+    ontology_id = None
 
+
+def str_to_organism(organism_str: str) -> _BasicOrganism | None:
+    clean_str = organism_str.strip().lower()
+    if clean_str == "homo sapiens":
+        return HomoSapiens
+    if clean_str == "mus musculus":
+        return MusMusculus
+    if clean_str == "multi species":
+        return MultiSpecies
+    return None
 
 class GeneMap:
 
     @staticmethod
-    def data_frame(organisms=None, index_col=None):
+    def data_frame(organisms: str | _BasicOrganism = None, index_col=None):
         if organisms is None:
-            organisms = [EnsemblOrganism.HUMAN.value, EnsemblOrganism.MOUSE.value]
+            organisms = [HomoSapiens, MusMusculus]
         
         if isinstance(organisms, str):
             # the single string value is given
-            organisms = [organisms]
+            organisms = str_to_organism(organisms)
 
         dfs = []
         for organism in organisms:
-            eo = EnsemblOrganism.from_str(organism)
-            if eo is not None:
-                fp = eo.map_file_name()
+            if isinstance(organism, _BasicOrganism):
+                fp = organism.gene_map_path
                 df = pd.read_csv(fp, sep=',', header=0, index_col=index_col)  # index=0 to make Ensemble ids index
                 dfs.append(df)
         if len(dfs) > 0:
