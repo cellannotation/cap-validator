@@ -33,8 +33,15 @@ class MultiSpecies(HomoSapiens):
     name = "Multi species"
     ontology_id = None
 
+@dataclass(frozen=True)
+class UnsupportedOrganism(_BasicOrganism):
+    name = "Unsupported"
+    ontology_id = None
+    gene_prefix = None
+    gene_map_path = None
 
-def str_to_organism(organism_str: str) -> _BasicOrganism | None:
+
+def str_to_organism(organism_str: str) -> _BasicOrganism:
     clean_str = organism_str.strip().lower()
     if clean_str == "homo sapiens":
         return HomoSapiens
@@ -42,7 +49,8 @@ def str_to_organism(organism_str: str) -> _BasicOrganism | None:
         return MusMusculus
     if clean_str == "multi species":
         return MultiSpecies
-    return None
+    return UnsupportedOrganism
+
 
 class GeneMap:
 
@@ -53,14 +61,15 @@ class GeneMap:
         
         if isinstance(organisms, str):
             # the single string value is given
-            organisms = str_to_organism(organisms)
+            organisms = [str_to_organism(organisms)]
 
         dfs = []
         for organism in organisms:
             if isinstance(organism, _BasicOrganism):
                 fp = organism.gene_map_path
-                df = pd.read_csv(fp, sep=',', header=0, index_col=index_col)  # index=0 to make Ensemble ids index
-                dfs.append(df)
+                if fp is not None:
+                    df = pd.read_csv(fp, sep=',', header=0, index_col=index_col)  # index=0 to make Ensemble ids index
+                    dfs.append(df)
         if len(dfs) > 0:
             return pd.concat(dfs, axis=0)
         else:
