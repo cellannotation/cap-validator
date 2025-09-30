@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+### Added
+- Added gene validation for cases when organisms are specified using ontology term IDs instead of names.
+
 ## [1.3.0] - 2025-09-29
 ### Added 
 - New exception `AnnDataNoneInGeneralMetadata` to handle cases where required metadata fields contain None or empty values.
