@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Updated
+- Gene Map file for Homo Sapiens was updated from [GENCODE Release 49](https://www.gencodegenes.org/human/release_49.html)
+- Gene Map file for Mus Musculus was updated from [GENCODE Release M38](https://www.gencodegenes.org/mouse/release_M38.html)
+
+
 ## [1.3.1] - 2025-09-30
 ### Changed
 - Added gene validation for cases when organisms are specified using ontology term IDs instead of names.
