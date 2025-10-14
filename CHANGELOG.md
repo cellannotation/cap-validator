@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+## [1.4.0] - 2025-10-14
+
 ### Updated
 - Gene Map file for Homo Sapiens was updated from [GENCODE Release 49](https://www.gencodegenes.org/human/release_49.html)
 - Gene Map file for Mus Musculus was updated from [GENCODE Release M38](https://www.gencodegenes.org/mouse/release_M38.html)
