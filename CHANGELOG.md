@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+## [1.4.1] - 2025-11-17
+
+### Updated
+
+- Gene Map file for Homo Sapiens was updated to support some outdated ENSEMBL ids from the [Issue](https://github.com/cellannotation/cap-validator/issues/9)
+
+
 ## [1.4.0] - 2025-10-14
 
 ### Updated
