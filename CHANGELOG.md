@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Added
+- New `find_missing_genes()->pd.DataFrame` function was added to UploadValidator to help users identify missing genes in their AnnData files.
+- More gene ids were added to Homo Sapiens Gene Map to cover missing genes reported by users from outdated ensembl releases.
+
 ## [1.4.1] - 2025-11-17
 
 ### Updated
