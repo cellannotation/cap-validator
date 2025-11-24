@@ -23,7 +23,7 @@ from .errors import (
     BadAnnDataFile,
     AnnDataNoneInGeneralMetadata,
 )
-from typing import Union
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -193,7 +193,7 @@ class UploadValidator:
         series = series.replace(r'^\s*$', np.nan, regex=True)
         return pd.notna(series).all()
 
-    def _check_var_index(self, cap_adata: CapAnnData) -> Union[None, pd.Series]:
+    def _check_var_index(self, cap_adata: CapAnnData) -> Optional[pd.Series]:
         logger.debug("Start checking var index...")
         index = cap_adata.var.index
         clean_index = self._remove_gene_version(index)
@@ -255,7 +255,7 @@ class UploadValidator:
             self,
             ens_ids: pd.Series,
             organism: str,
-        ) -> Union[None, pd.Series]:
+        ) -> Optional[pd.Series]:
         """
         The method find missing genes from gene map for given organism. 
         Return None if all genes are valid. 
@@ -269,12 +269,12 @@ class UploadValidator:
         
         # Check genes with gene maps
         df = GeneMap.data_frame(organisms=organism)
-        missings_genes_mask = ~ens_ids.isin(df['ENSEMBL_gene'])
-        if missings_genes_mask.any():
+        missing_genes_mask = ~ens_ids.isin(df['ENSEMBL_gene'])
+        if missing_genes_mask.any():
             # Gene names are non standard
             logger.debug("Gene names are not standard!")
             self._multi_exception.append(AnnDataNonStandardVarError())
-            return missings_genes_mask
+            return missing_genes_mask
             
     @staticmethod
     def _remove_gene_version(ensemble_ids: pd.Index) -> pd.Index:
