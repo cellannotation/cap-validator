@@ -23,6 +23,7 @@ from .errors import (
     BadAnnDataFile,
     AnnDataNoneInGeneralMetadata,
 )
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +79,27 @@ class UploadValidator:
         if report_success:
             print("Validation passed!")
         logger.debug("Finish anndata file validation")
+
+    def find_missing_genes(self) -> Optional[pd.DataFrame]:
+        """The method finds missing genes from the gene map for the validated AnnData."""
+        logger.debug("Begin finding missing genes...")
+        
+        if not str(self._adata_path).endswith(".h5ad"):
+            raise BadAnnDataFile
+        
+        missing_genes = None
+        with read_h5ad(self._adata_path, edit=False) as cap_adata:
+            cap_adata.read_obs(columns=GENERAL_METADATA)  # TODO: read all columns?
+            cap_adata.read_var()
+            if cap_adata.raw is not None:
+                cap_adata.raw.read_var()
+            
+            missing_genes_mask = self._check_var_index(cap_adata=cap_adata)
+            if missing_genes_mask is not None:
+                missing_genes = cap_adata.var.loc[missing_genes_mask]
+        logger.debug("Finished finding missing genes!")
+        return missing_genes
+        
 
     def _check_X(self, cap_adata: CapAnnData) -> None:
         logger.debug("Begin checking X")
@@ -171,7 +193,7 @@ class UploadValidator:
         series = series.replace(r'^\s*$', np.nan, regex=True)
         return pd.notna(series).all()
 
-    def _check_var_index(self, cap_adata: CapAnnData) -> None:
+    def _check_var_index(self, cap_adata: CapAnnData) -> Optional[pd.Series]:
         logger.debug("Start checking var index...")
         index = cap_adata.var.index
         clean_index = self._remove_gene_version(index)
@@ -209,41 +231,51 @@ class UploadValidator:
             dataset_organisms = []
         logger.debug(f"Organism(s) in dataset = {dataset_organisms}, known organisms = {known_organisms_values}")
        
+        missing_genes_mask = None
         # Check ENSEMBL ids for supported organism
         if len(dataset_organisms) == 1:
             organism = dataset_organisms[0]
             self._organism = organism
             if organism.name in known_organisms_values:
                 logger.debug("There is the only known organisms in dataset, so we must check for Unsemble IDs in var.index!")
-                self._validate_gene_ids(ens_ids=clean_index, organism=organism)
+                missing_genes_mask = self._validate_gene_ids(ens_ids=clean_index, organism=organism)
             else:
                 logger.debug("Unknown organisms in dataset found, index var validation skipped!")
         elif len(dataset_organisms) > 1:
             logger.debug("There are multiple organisms in dataset")
             self._organism = MultiSpecies
-            self._validate_gene_ids(
+            missing_genes_mask = self._validate_gene_ids(
                 ens_ids=clean_index,
                 organism=self._organism,
                 )
         logger.debug("Finished checking var index!")
+        return missing_genes_mask
     
     def _validate_gene_ids(
             self,
             ens_ids: pd.Series,
             organism: str,
-        ) -> None:
-        if not (ens_ids.empty or pd.api.types.is_any_real_numeric_dtype(ens_ids)) : 
-            # Check genes with gene maps
-            df = GeneMap.data_frame(organisms=organism)
-            if not ens_ids.isin(df['ENSEMBL_gene']).all():
-                # Gene names are non standard
-                logger.debug("Gene names are not standard!")
-                self._multi_exception.append(AnnDataNonStandardVarError())
-        else:
+        ) -> Optional[pd.Series]:
+        """
+        The method finds missing genes from gene map for given organism. 
+        Return None if all genes are valid. 
+        Else return pd.Series of boolean mask of missing genes.
+        """
+        if ens_ids.empty or pd.api.types.is_any_real_numeric_dtype(ens_ids):
             # Gene names are missed
             logger.debug("Gene names are missed!")
             self._multi_exception.append(AnnDataNonStandardVarError())
-
+            return
+        
+        # Check genes with gene maps
+        df = GeneMap.data_frame(organisms=organism)
+        missing_genes_mask = ~ens_ids.isin(df['ENSEMBL_gene'])
+        if missing_genes_mask.any():
+            # Gene names are non standard
+            logger.debug("Gene names are not standard!")
+            self._multi_exception.append(AnnDataNonStandardVarError())
+            return missing_genes_mask
+            
     @staticmethod
     def _remove_gene_version(ensemble_ids: pd.Index) -> pd.Index:
         """
