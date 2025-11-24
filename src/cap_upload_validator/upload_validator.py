@@ -80,7 +80,7 @@ class UploadValidator:
             print("Validation passed!")
         logger.debug("Finish anndata file validation")
 
-    def find_missing_genes(self) -> pd.DataFrame:
+    def find_missing_genes(self) -> Optional[pd.DataFrame]:
         """The method finds missing genes from the gene map for the validated AnnData."""
         logger.debug("Begin finding missing genes...")
         
@@ -257,7 +257,7 @@ class UploadValidator:
             organism: str,
         ) -> Optional[pd.Series]:
         """
-        The method find missing genes from gene map for given organism. 
+        The method finds missing genes from gene map for given organism. 
         Return None if all genes are valid. 
         Else return pd.Series of boolean mask of missing genes.
         """
