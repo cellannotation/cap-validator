@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+## [1.5.1] - 2026-01-15
+
+### Updated
+
+- N new genes were added to Gene Map file for Homo Sapiens
+
 ## [1.5.0] - 2025-11-24
 
 ### Added
