@@ -113,3 +113,16 @@ class AnnDataNonStandardVarError(CapException):
             If there are other species you wish to upload to CAP, please contact
             support@celltype.info and we will work to accommodate your request.
         """ 
+
+class CSCMatrixInX(CapException):
+    name = "CSCMatrixInX"
+
+    def __init__(self, location: str):
+        """
+        location: 'X', 'raw.X', or 'X and raw.X'
+        """
+        super().__init__()
+        self.message = (
+            f"The CSC matrix is found in {location}. "
+            "Gene expression matrix must be stored in CSR or dense format!"
+        )
