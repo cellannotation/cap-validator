@@ -266,62 +266,73 @@ def test_ontology_id_instead_general_metadata(names_provided, with_none):
             v._check_obs(adata)
 
 
-def write_sparse_group(f, path, encoding):
-    g = f.create_group(path)
-    g.attrs["encoding-type"] = encoding
-    g.attrs["encoding-version"] = "0.1.0"
-    g.attrs["shape"] = (5, 5)
-    g.create_dataset("data", data=np.array([1, 2]))
-    g.create_dataset("indices", data=np.array([0, 1]))
-    g.create_dataset("indptr", data=np.array([0, 1, 2]))
+def write_adata_with_matrix(path, X, raw_X=None):
+    adata = ad.AnnData(X=X)
+
+    if raw_X is not None:
+        adata.raw = ad.AnnData(X=raw_X)
+
+    adata.write_h5ad(path)
 
 
 def test_csc_in_x_raises(tmp_path):
     p = tmp_path / "test.h5ad"
-    with h5py.File(p, "w") as f:
-        write_sparse_group(f, "X", "csc_matrix")
+
+    X = sp.csc_matrix(np.eye(5)) # CSC
+    write_adata_with_matrix(p, X=X)
+
+    v = UploadValidator(p)
 
     with pytest.raises(CSCMatrixInX) as e:
-        v = UploadValidator(p)
-        v._validate_x_and_raw_x_formats(p)
+        with read_h5ad(p, edit=False) as cap_adata:
+            v._validate_x_and_raw_x_formats(cap_adata)
 
     assert "X" in e.value.message
 
 
 def test_csc_in_raw_x_raises(tmp_path):
     p = tmp_path / "test.h5ad"
-    with h5py.File(p, "w") as f:
-        write_sparse_group(f, "X", "csr_matrix")
-        raw = f.create_group("raw")
-        write_sparse_group(f, "raw/X", "csc_matrix")
+
+    X = sp.csr_matrix(np.eye(5)) # valid CSR
+    raw_X = sp.csc_matrix(np.eye(5)) # invalid CSC
+
+    write_adata_with_matrix(p, X=X, raw_X=raw_X)
+
+    v = UploadValidator(p)
 
     with pytest.raises(CSCMatrixInX) as e:
-        v = UploadValidator(p)
-        v._validate_x_and_raw_x_formats(p)
+        with read_h5ad(p, edit=False) as cap_adata:
+            v._validate_x_and_raw_x_formats(cap_adata)
 
     assert "raw.X" in e.value.message
 
 
 def test_csc_in_both_raises(tmp_path):
     p = tmp_path / "test.h5ad"
-    with h5py.File(p, "w") as f:
-        write_sparse_group(f, "X", "csc_matrix")
-        raw = f.create_group("raw")
-        write_sparse_group(f, "raw/X", "csc_matrix")
+
+    X = sp.csc_matrix(np.eye(5))
+    raw_X = sp.csc_matrix(np.eye(5))
+
+    write_adata_with_matrix(p, X=X, raw_X=raw_X)
+
+    v = UploadValidator(p)
 
     with pytest.raises(CSCMatrixInX) as e:
-        v = UploadValidator(p)
-        v._validate_x_and_raw_x_formats(p)
+        with read_h5ad(p, edit=False) as cap_adata:
+            v._validate_x_and_raw_x_formats(cap_adata)
 
     assert "X and raw.X" in e.value.message
 
 
 def test_dense_and_csr_pass(tmp_path):
     p = tmp_path / "test.h5ad"
-    with h5py.File(p, "w") as f:
-        f.create_dataset("X", data=np.random.rand(5, 5))
-        raw = f.create_group("raw")
-        write_sparse_group(f, "raw/X", "csr_matrix")
+
+    X = np.random.rand(5, 5) # valid dense
+    raw_X = sp.csr_matrix(np.eye(5)) # valid CSR
+
+    write_adata_with_matrix(p, X=X, raw_X=raw_X)
 
     v = UploadValidator(p)
-    v._validate_x_and_raw_x_formats(p) # should not raise exception
+
+    with read_h5ad(p, edit=False) as cap_adata:
+        v._validate_x_and_raw_x_formats(cap_adata) # should not raise

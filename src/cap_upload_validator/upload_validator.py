@@ -70,7 +70,7 @@ class UploadValidator:
             if cap_adata.raw is not None:
                 cap_adata.raw.read_var(columns=[])
 
-            self._validate_x_and_raw_x_formats(self._adata_path)
+            self._validate_x_and_raw_x_formats(cap_adata)
             self._check_X(cap_adata)
             self._check_obsm(cap_adata)
             self._check_obs(cap_adata)
@@ -309,28 +309,29 @@ class UploadValidator:
     def _is_dense(self, group_or_dataset) -> bool:
         return isinstance(group_or_dataset, h5py.Dataset)
 
-    def _validate_x_and_raw_x_formats(self, h5ad_path: str) -> None:
+    def _validate_x_and_raw_x_formats(self, cap_adata: CapAnnData) -> None:
         """
         Validate that X and raw.X (if exists) are dense or CSR.
         Raise CSCMatrixInX otherwise.
         """
         locations = []
+    
+        f = cap_adata.file
+    
+        # X
+        x = f["X"]
+        if self._is_csc(x):
+            locations.append("X")
+        elif not (self._is_dense(x) or self._is_csr(x)):
+            locations.append("X")
 
-        with h5py.File(h5ad_path, "r") as f:
-            # X
-            x = f["X"]
-            if self._is_csc(x):
-                locations.append("X")
-            elif not (self._is_dense(x) or self._is_csr(x)):
-                locations.append("X")
-
-            # raw.X
-            if "raw" in f and "X" in f["raw"]:
-                raw_x = f["raw/X"]
-                if self._is_csc(raw_x):
-                    locations.append("raw.X")
-                elif not (self._is_dense(raw_x) or self._is_csr(raw_x)):
-                    locations.append("raw.X")
+        # raw.X
+        if "raw" in f and "X" in f["raw"]:
+            raw_x = f["raw/X"]
+            if self._is_csc(raw_x):
+                locations.append("raw.X")
+            elif not (self._is_dense(raw_x) or self._is_csr(raw_x)):
+                locations.append("raw.X")
 
         if locations:
             raise CSCMatrixInX(location=" and ".join(locations))
