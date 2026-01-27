@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import h5py
 from scipy.sparse import issparse
 from cap_anndata import CapAnnData, read_h5ad
 import logging
@@ -22,6 +23,7 @@ from .errors import (
     AnnDataNonStandardVarError,
     BadAnnDataFile,
     AnnDataNoneInGeneralMetadata,
+    CSCMatrixInX,
 )
 from typing import Optional
 
@@ -68,6 +70,7 @@ class UploadValidator:
             if cap_adata.raw is not None:
                 cap_adata.raw.read_var(columns=[])
 
+            self._validate_x_and_raw_x_formats(self._adata_path)
             self._check_X(cap_adata)
             self._check_obsm(cap_adata)
             self._check_obs(cap_adata)
@@ -287,3 +290,47 @@ class UploadValidator:
         clean_index = ensemble_ids.to_series().apply(lambda x: x.split(".")[0])
         clean_index = pd.Index(clean_index)
         return clean_index
+
+    def _is_csc(self, group_or_dataset) -> bool:
+        """
+        Returns True if HDF5 object represents a CSC sparse matrix.
+        """
+        if not isinstance(group_or_dataset, h5py.Group):
+            return False
+
+        encoding = group_or_dataset.attrs.get("encoding-type", None)
+        return encoding == "csc_matrix"
+
+    def _is_csr(self, group_or_dataset) -> bool:
+        if not isinstance(group_or_dataset, h5py.Group):
+            return False
+        return group_or_dataset.attrs.get("encoding-type", None) == "csr_matrix"
+
+    def _is_dense(self, group_or_dataset) -> bool:
+        return isinstance(group_or_dataset, h5py.Dataset)
+
+    def _validate_x_and_raw_x_formats(self, h5ad_path: str) -> None:
+        """
+        Validate that X and raw.X (if exists) are dense or CSR.
+        Raise CSCMatrixInX otherwise.
+        """
+        locations = []
+
+        with h5py.File(h5ad_path, "r") as f:
+            # X
+            x = f["X"]
+            if self._is_csc(x):
+                locations.append("X")
+            elif not (self._is_dense(x) or self._is_csr(x)):
+                locations.append("X")
+
+            # raw.X
+            if "raw" in f and "X" in f["raw"]:
+                raw_x = f["raw/X"]
+                if self._is_csc(raw_x):
+                    locations.append("raw.X")
+                elif not (self._is_dense(raw_x) or self._is_csr(raw_x)):
+                    locations.append("raw.X")
+
+        if locations:
+            raise CSCMatrixInX(location=" and ".join(locations))
