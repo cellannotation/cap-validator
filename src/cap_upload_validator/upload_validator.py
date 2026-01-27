@@ -1,10 +1,9 @@
 import pandas as pd
 import numpy as np
-import h5py
 from scipy.sparse import issparse
 from cap_anndata import CapAnnData, read_h5ad
 import logging
-from h5py import Dataset
+from h5py import Dataset, Group
 
 from .gene_mapping import (
     GeneMap,
@@ -295,19 +294,19 @@ class UploadValidator:
         """
         Returns True if HDF5 object represents a CSC sparse matrix.
         """
-        if not isinstance(group_or_dataset, h5py.Group):
+        if not isinstance(group_or_dataset, Group):
             return False
 
         encoding = group_or_dataset.attrs.get("encoding-type", None)
         return encoding == "csc_matrix"
 
     def _is_csr(self, group_or_dataset) -> bool:
-        if not isinstance(group_or_dataset, h5py.Group):
+        if not isinstance(group_or_dataset, Group):
             return False
         return group_or_dataset.attrs.get("encoding-type", None) == "csr_matrix"
 
     def _is_dense(self, group_or_dataset) -> bool:
-        return isinstance(group_or_dataset, h5py.Dataset)
+        return isinstance(group_or_dataset, Dataset)
 
     def _validate_x_and_raw_x_formats(self, cap_adata: CapAnnData) -> None:
         """
