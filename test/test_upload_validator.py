@@ -3,7 +3,9 @@ import numpy as np
 import pandas as pd
 
 import anndata as ad
-ad.settings.allow_write_nullable_strings = True
+from packaging import version
+if version.parse(ad.__version__) >= version.parse("0.11.0"):
+    ad.settings.allow_write_nullable_strings = True
 
 import scipy.sparse as sp
 from pathlib import Path
