@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.9"
 resolution-markers = [
     "python_full_version >= '3.12'",
@@ -65,7 +65,7 @@ wheels = [
 
 [[package]]
 name = "cap-anndata"
-version = "0.5.0"
+version = "0.5.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anndata", version = "0.10.9", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
@@ -74,14 +74,14 @@ dependencies = [
     { name = "numpy", version = "2.2.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
     { name = "pandas" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/12/b8/78a21f27e2eaa8c28a6855b2b6509ee3765139fede84042147f553e8a190/cap_anndata-0.5.0.tar.gz", hash = "sha256:8b288c1c948e068979eede4aa87b4375e91ba68ead36598a810e8e15077f580c", size = 16563, upload-time = "2025-05-30T13:06:23.545Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/6f/41/f0ca38348b2f5be0c5ceaa524a672327dafa10fa0aaaf9cc4ae56fcd851e/cap_anndata-0.5.2.tar.gz", hash = "sha256:dff2d52fd9255eebd3c47982d0eb40036e8ff868585a5e688532d3c7cf2b9c79", size = 16584, upload-time = "2026-02-02T10:31:20.717Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f0/0d/823f21cafd2445301fe24a6524a4d71f0597047853d759add77d3b05914a/cap_anndata-0.5.0-py3-none-any.whl", hash = "sha256:2e634dcf13c4eecbacfacd76088dd149ce2eaa6a69cecda9032e1d29d2aa067f", size = 10551, upload-time = "2025-05-30T13:06:22.443Z" },
+    { url = "https://files.pythonhosted.org/packages/b1/3f/5f6f3b061fbd6b0af505fa5069f800560a1e656c6ac99aea24ea34e27627/cap_anndata-0.5.2-py3-none-any.whl", hash = "sha256:e5da884cc3a884c40c64dc105da44ec1969e60b6e5a2fd8b8444b229bb1180b7", size = 10584, upload-time = "2026-02-02T10:31:19.183Z" },
 ]
 
 [[package]]
 name = "cap-upload-validator"
-version = "1.3.1"
+version = "1.5.1"
 source = { editable = "." }
 dependencies = [
     { name = "cap-anndata" },
@@ -94,7 +94,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "cap-anndata", specifier = ">=0.5.0" },
+    { name = "cap-anndata", specifier = ">=0.5.2" },
     { name = "numpy", specifier = ">=2.0.2" },
     { name = "pandas", specifier = ">=2.2.3" },
     { name = "scipy", specifier = ">=1.13.1" },
