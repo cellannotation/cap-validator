@@ -65,7 +65,7 @@ wheels = [
 
 [[package]]
 name = "cap-anndata"
-version = "0.5.1"
+version = "0.5.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anndata", version = "0.10.9", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
@@ -74,9 +74,9 @@ dependencies = [
     { name = "numpy", version = "2.2.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
     { name = "pandas" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/8b/15/a394e26dd1c8b072c74cdb641ef8f6365fbd44fe4c42bd8079c94e14c855/cap_anndata-0.5.1.tar.gz", hash = "sha256:e63160b8d03461e2e902923d86d19f0782f6f69975f5d45cea95c0f15e8a29b5", size = 16607, upload-time = "2026-02-02T09:20:21.909Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/6f/41/f0ca38348b2f5be0c5ceaa524a672327dafa10fa0aaaf9cc4ae56fcd851e/cap_anndata-0.5.2.tar.gz", hash = "sha256:dff2d52fd9255eebd3c47982d0eb40036e8ff868585a5e688532d3c7cf2b9c79", size = 16584, upload-time = "2026-02-02T10:31:20.717Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/db/f0/60d4b716e1988f93bc05d79b4dcf74442b4524ff373f05a645ce2a725719/cap_anndata-0.5.1-py3-none-any.whl", hash = "sha256:c5606c95859e3ad6eb2d1fc41aba444e61aa10670bf676abe205bc9508351bb9", size = 10593, upload-time = "2026-02-02T09:20:20.441Z" },
+    { url = "https://files.pythonhosted.org/packages/b1/3f/5f6f3b061fbd6b0af505fa5069f800560a1e656c6ac99aea24ea34e27627/cap_anndata-0.5.2-py3-none-any.whl", hash = "sha256:e5da884cc3a884c40c64dc105da44ec1969e60b6e5a2fd8b8444b229bb1180b7", size = 10584, upload-time = "2026-02-02T10:31:19.183Z" },
 ]
 
 [[package]]
@@ -94,7 +94,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "cap-anndata", specifier = ">=0.5.1" },
+    { name = "cap-anndata", specifier = ">=0.5.2" },
     { name = "numpy", specifier = ">=2.0.2" },
     { name = "pandas", specifier = ">=2.2.3" },
     { name = "scipy", specifier = ">=1.13.1" },
