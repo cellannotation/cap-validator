@@ -1,7 +1,10 @@
 import pytest
 import numpy as np
 import pandas as pd
+
 import anndata as ad
+ad.settings.allow_write_nullable_strings = True
+
 import scipy.sparse as sp
 from pathlib import Path
 import tempfile
