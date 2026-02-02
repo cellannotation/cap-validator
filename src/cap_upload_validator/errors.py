@@ -123,7 +123,8 @@ class CSCMatrixInX(CapException):
         """
         super().__init__()
         self.locations = locations
+        loc_str = " and ".join(locations)
         self.message = (
-            f"The CSC matrix is found in {', '.join(locations)}. "
+            f"The CSC matrix is found in {loc_str}. "
             "Gene expression matrix must be stored in CSR or dense format!"
         )
