@@ -117,12 +117,13 @@ class AnnDataNonStandardVarError(CapException):
 class CSCMatrixInX(CapException):
     name = "CSCMatrixInX"
 
-    def __init__(self, location: str):
+    def __init__(self, locations: list[str]):
         """
-        location: 'X', 'raw.X', or 'X and raw.X'
+        locations: list of matrix locations, e.g. ['X'], ['raw.X'], or ['X', 'raw.X']
         """
         super().__init__()
+        self.locations = locations
         self.message = (
-            f"The CSC matrix is found in {location}. "
+            f"The CSC matrix is found in {', '.join(locations)}. "
             "Gene expression matrix must be stored in CSR or dense format!"
         )

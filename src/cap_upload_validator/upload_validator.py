@@ -333,4 +333,4 @@ class UploadValidator:
                 locations.append("raw.X")
 
         if locations:
-            raise CSCMatrixInX(location=" and ".join(locations))
+            raise CSCMatrixInX(locations=locations)
