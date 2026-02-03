@@ -78,21 +78,30 @@ class AnnDataFileMissingCountMatrix(CapException):
 
 class AnnDataMissingEmbeddings(CapException):
     name = "AnnDataMissingEmbeddings"
-    message = \
-        """
-        The embedding is missing or is incorrectly named: embeddings must be a [n_cells x 2] 
-        numpy array saved with the prefix X_, for example: X_tsne, X_pca or X_umap.
-        """
+
+    def __init__(self, details: str = ""):
+        base_message = (
+            "The embedding is missing or incorrectly formatted. "
+            "Embeddings must be stored in `.obsm` as [n_cells x 2] datasets "
+            "with names starting with 'X_' (e.g. X_umap, X_tsne)."
+        )
+        if details:
+            self.message = f"{base_message}\nDetails:\n{details}"
+        else:
+            self.message = base_message
 
 
 class AnnDataMissingObsColumns(CapException):
     name = "AnnDataMissingObsColumns"
-    message = \
-        """
-            Required obs column(s) missing: file must contain 
-            'assay', 'disease', 'organism' and 'tissue' fields or
-            corresponding '<x>_ontology_term_id' fields with valid values.
-        """
+
+    def __init__(self, details: str = ""):
+        base_message = (
+            "Required obs metadata is missing. File must contain "
+            "'assay', 'disease', 'organism', 'tissue' "
+            "or corresponding '<x>_ontology_term_id' fields."
+        )
+        self.message = f"{base_message}\nDetails: {details}" if details else base_message
+
 
 class AnnDataNoneInGeneralMetadata(CapException):
     name = "AnnDataNoneInGeneralMetadata"
@@ -102,6 +111,7 @@ class AnnDataNoneInGeneralMetadata(CapException):
             'assay', 'disease', 'organism' and 'tissue' fields or
             corresponding '<x>_ontology_term_id' fields with valid values.
         """
+
 
 class AnnDataNonStandardVarError(CapException):
     name = "AnnDataNonStandardVarError"
@@ -113,6 +123,7 @@ class AnnDataNonStandardVarError(CapException):
             If there are other species you wish to upload to CAP, please contact
             support@celltype.info and we will work to accommodate your request.
         """ 
+
 
 class CSCMatrixInX(CapException):
     name = "CSCMatrixInX"
