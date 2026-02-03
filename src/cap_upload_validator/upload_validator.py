@@ -135,59 +135,126 @@ class UploadValidator:
         return True
 
     def _check_obsm(self, cap_adata: CapAnnData) -> None:
+        """
+        Validate presence and correctness of embeddings in .obsm.
+        Appends AnnDataMissingEmbeddings if invalid.
+        """
         logger.debug("Begin checking obsm")
-        if self._has_embeddings(cap_adata) is False:
-            self._multi_exception.append(AnnDataMissingEmbeddings())
-        logger.debug("Finished checking obsm!")
 
-    def _has_embeddings(self, cap_adata: CapAnnData) -> bool:
         if cap_adata.obsm is None:
-            logger.debug("Obsm is not found in anndata!")
-            return False
-        
+            self._multi_exception.append(
+                AnnDataMissingEmbeddings("Obsm is not found in anndata!")
+            )
+            return
+
         n_cells = cap_adata.shape[0]
+        obsm_keys = list(cap_adata.obsm_keys())
 
-        for field in cap_adata.obsm_keys():
-            if field.startswith(EMBEDDING_PREFIX):
-                entity = cap_adata.obsm[field]
-                if isinstance(entity, Dataset) and entity.shape == (n_cells, 2):
-                    # looking for dense matrix of N x 2 shape 
-                    return True
+        if not obsm_keys:
+            self._multi_exception.append(
+                AnnDataMissingEmbeddings("Obsm exists but contains no keys.")
+            )
+            return
 
-        logger.debug(f"Embeddings not found in obsm_keys = {cap_adata.obsm_keys()}!")
-        return False
+        embedding_keys = [k for k in obsm_keys if k.startswith(EMBEDDING_PREFIX)]
+
+        if not embedding_keys:
+            self._multi_exception.append(
+                AnnDataMissingEmbeddings(
+                    f"Obsm keys found: {obsm_keys}, "
+                    f"but none start with required prefix '{EMBEDDING_PREFIX}'."
+                )
+            )
+            return
+
+        errors = []
+
+        for key in embedding_keys:
+            entity = cap_adata.obsm[key]
+
+            if not isinstance(entity, Dataset):
+                errors.append(
+                    f"{key}: expected h5py.Dataset, found {type(entity).__name__}"
+                )
+                continue
+
+            if entity.shape != (n_cells, 2):
+                errors.append(
+                    f"{key}: invalid shape {entity.shape}, expected ({n_cells}, 2)"
+                )
+                continue
+
+            # Found at least one valid embedding, so success case
+            return
+
+        # No valid embeddings found
+        self._multi_exception.append(
+            AnnDataMissingEmbeddings(
+                "Embedding candidates found but invalid:\n" + "\n".join(errors)
+            )
+        )
+
+        logger.debug("Finished checking obsm!")
 
     def _check_obs(self, cap_adata: CapAnnData) -> None:
         logger.debug("Start checking obs")
-        obs_keys = cap_adata.obs_keys()
+
+        obs_keys = list(cap_adata.obs_keys())
         logger.debug(f"Checking obs_columns = {obs_keys} for required {GENERAL_METADATA}!")
-        
+
+        # If obs missing entirely
         if cap_adata.obs is None or not obs_keys:
             logger.warning(".obs is missing!")
-            self._multi_exception.append(AnnDataMissingObsColumns())
+            self._multi_exception.append(
+                AnnDataMissingObsColumns(".obs is missing completely.")
+            )
             return
+
+        missing_columns = []
+        empty_columns = []
 
         for col in GENERAL_METADATA:
             ont_id_col = f"{col}_ontology_term_id"
+
             col_in_obs = col in obs_keys
             ont_id_col_in_obs = ont_id_col in obs_keys
 
+            # Column missing entirely
             if not (col_in_obs or ont_id_col_in_obs):
-                logger.debug(f"Column {col} is missing in .obs!")
-                self._multi_exception.append(AnnDataMissingObsColumns(f"{col} column is missing in .obs!"))
-                return
-            else:
-                if col_in_obs:
-                    if not self._check_df_col_for_none(cap_adata.obs[col]):
-                        logger.debug(f"Column {col} contains None or empty values in .obs!")
-                        self._multi_exception.append(AnnDataNoneInGeneralMetadata(f"{col} column contains None or empty values in .obs!"))
-                        return
-                if ont_id_col_in_obs:
-                    cap_adata.read_obs([ont_id_col])
-                    if not self._check_df_col_for_none(cap_adata.obs[ont_id_col]):
-                        logger.debug(f"Column {ont_id_col} contains None or empty values in .obs!")
-                        self._multi_exception.append(AnnDataNoneInGeneralMetadata(f"{ont_id_col} column contains None or empty values in .obs!"))
-                        return
+                missing_columns.append(col)
+                continue
+
+            # Validate regular column values
+            if col_in_obs:
+                if not self._check_df_col_for_none(cap_adata.obs[col]):
+                    empty_columns.append(col)
+
+            # Validate ontology column values
+            if ont_id_col_in_obs:
+                if ont_id_col not in cap_adata.obs.columns:
+                    cap_adata.read_obs(columns=[ont_id_col])
+
+                if not self._check_df_col_for_none(cap_adata.obs[ont_id_col]):
+                    empty_columns.append(ont_id_col)
+
+        # Report missing columns
+        if missing_columns:
+            self._multi_exception.append(
+                AnnDataMissingObsColumns(
+                    "Missing required obs columns: "
+                    + ", ".join(missing_columns)
+                )
+            )
+
+        # Report empty/None columns
+        if empty_columns:
+            self._multi_exception.append(
+                AnnDataNoneInGeneralMetadata(
+                    "Required obs columns contain empty/None values: "
+                    + ", ".join(empty_columns)
+                )
+            )
+
         logger.debug("Finished checking obs!")
 
     @staticmethod
