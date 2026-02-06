@@ -4,11 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+## [1.5.2] - 2026-02-06
+
+### Added
+- New genes were added to Gene Map file for Homo Sapiens
+- New error message was added for CSC matrices in `adata.X` or `adata.raw.X`
+
 ## [1.5.1] - 2026-01-15
 
 ### Updated
 
-- N new genes were added to Gene Map file for Homo Sapiens
+- New genes were added to Gene Map file for Homo Sapiens
 
 ## [1.5.0] - 2025-11-24
 

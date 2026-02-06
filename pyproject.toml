@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "cap_upload_validator"
-version = "1.5.1"
+version = "1.5.2"
 authors = [
   { name="Roman Mukhin" },
   { name="Andrey Isaev" },
@@ -18,7 +18,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 license = "BSD-3-Clause"
-license-files = ["LICEN[CS]E*"]
+license-files = ["LICENSE"]
 dependencies = [
     "cap-anndata>=0.5.2",
     "numpy>=2.0.2",
