@@ -113,6 +113,7 @@ class UploadValidator:
         
 
     def _check_X(self, cap_adata: CapAnnData) -> None:
+        logger.debug("Begin checking X")
         X = cap_adata.raw.X if cap_adata.raw is not None else cap_adata.X
 
         if X is None:
@@ -123,6 +124,8 @@ class UploadValidator:
             self._multi_exception.append(
                 AnnDataInvalidCountMatrix()
             )
+
+        logger.debug("Finish checking X")
 
     @staticmethod
     def has_only_integers(arr: np.ndarray) -> bool:
