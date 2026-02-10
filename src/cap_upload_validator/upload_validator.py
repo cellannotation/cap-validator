@@ -22,6 +22,7 @@ from .errors import (
     AnnDataMissingObsColumns,
     AnnDataMissingVarIndex,
     AnnDataNumericVarIndex,
+    AnnDataMixedSpeciesGenes,
     AnnDataVarNotSubsetOfRawVar,
     AnnDataGenesNotInReference,
     BadAnnDataFile,
