@@ -156,8 +156,10 @@ class UploadValidator:
         logger.debug("Begin checking obsm")
 
         if cap_adata.obsm is None:
+            reason = "Obsm is not found in anndata!"
+            logger.debug(reason)
             self._multi_exception.append(
-                AnnDataMissingEmbeddings("Obsm is not found in anndata!")
+                AnnDataMissingEmbeddings(reason)
             )
             return
 
@@ -165,19 +167,20 @@ class UploadValidator:
         obsm_keys = list(cap_adata.obsm_keys())
 
         if not obsm_keys:
+            reason = "Obsm exists but contains no keys."
+            logger.debug(reason)
             self._multi_exception.append(
-                AnnDataMissingEmbeddings("Obsm exists but contains no keys.")
+                AnnDataMissingEmbeddings(reason)
             )
             return
 
         embedding_keys = [k for k in obsm_keys if k.startswith(EMBEDDING_PREFIX)]
 
         if not embedding_keys:
+            reason = f"Obsm keys found: {obsm_keys}, but none start with required prefix '{EMBEDDING_PREFIX}'."
+            logger.debug(reason)
             self._multi_exception.append(
-                AnnDataMissingEmbeddings(
-                    f"Obsm keys found: {obsm_keys}, "
-                    f"but none start with required prefix '{EMBEDDING_PREFIX}'."
-                )
+                AnnDataMissingEmbeddings(reason)
             )
             return
 
@@ -202,10 +205,10 @@ class UploadValidator:
             return
 
         # No valid embeddings found
+        reason = "Embedding candidates found but invalid:\n" + "\n".join(errors)
+        logger.debug(reason)
         self._multi_exception.append(
-            AnnDataMissingEmbeddings(
-                "Embedding candidates found but invalid:\n" + "\n".join(errors)
-            )
+            AnnDataMissingEmbeddings(reason)
         )
 
         logger.debug("Finished checking obsm!")
@@ -218,9 +221,10 @@ class UploadValidator:
 
         # If obs missing entirely
         if cap_adata.obs is None or not obs_keys:
-            logger.warning(".obs is missing!")
+            reason = ".obs is missing completely."
+            logger.debug(reason)
             self._multi_exception.append(
-                AnnDataMissingObsColumns(".obs is missing completely.")
+                AnnDataMissingObsColumns(reason)
             )
             return
 
@@ -253,20 +257,18 @@ class UploadValidator:
 
         # Report missing columns
         if missing_columns:
+            reason = "Missing required obs columns: " + ", ".join(missing_columns)
+            logger.debug(reason)
             self._multi_exception.append(
-                AnnDataMissingObsColumns(
-                    "Missing required obs columns: "
-                    + ", ".join(missing_columns)
-                )
+                AnnDataMissingObsColumns(reason)
             )
 
         # Report empty/None columns
         if empty_columns:
+            reason = "Required obs columns contain empty/None values: " + ", ".join(empty_columns)
+            logger.debug(reason)
             self._multi_exception.append(
-                AnnDataNoneInGeneralMetadata(
-                    "Required obs columns contain empty/None values: "
-                    + ", ".join(empty_columns)
-                )
+                AnnDataNoneInGeneralMetadata(reason)
             )
 
         logger.debug("Finished checking obs!")
@@ -296,14 +298,15 @@ class UploadValidator:
             self._multi_exception.append(AnnDataGenesNotInReference(n_missing=0))
             return
 
-        # var and raw.var
+        # Check if the var.index is a subset of raw.var.index
         if cap_adata.raw is not None and cap_adata.raw.var is not None:
+            logger.debug("As of raw exists, checking that var.index is a subset of raw.var.index!")
             if not index.isin(cap_adata.raw.var.index).all():
                 self._multi_exception.append(AnnDataVarNotSubsetOfRawVar())
                 return
 
-        # organism detection
-        known_organisms = {HomoSapiens.name, MusMusculus.name}
+        # Check the number of organisms in the dataset
+        known_organisms = {HomoSapiens.name, MusMusculus.name} # Only Human and Mouse supported this moment
         obs_keys = cap_adata.obs_keys()
 
         if ORGANISM_COLUMN in obs_keys:
@@ -322,26 +325,27 @@ class UploadValidator:
         else:
             dataset_organisms = []
 
-        logger.debug(f"Organism(s) in dataset = {dataset_organisms}")
+        logger.debug(f"Organism(s) in dataset = {dataset_organisms}, known organisms = {known_organisms}")
 
-        # validate organism
+        missing_genes_mask = None
+        # Check ENSEMBL ids for supported organism
         if len(dataset_organisms) == 1:
             organism = dataset_organisms[0]
             self._organism = organism
 
             if organism.name in known_organisms:
-                return self._validate_gene_ids(clean_index, organism)
+                logger.debug("There is the only known organisms in dataset, so we must check for Unsemble IDs in var.index!")
+                missing_genes_mask = self._validate_gene_ids(clean_index, organism)
 
-            # unknown organism => skip validation
-            logger.debug("Unknown organism found; skipping gene validation.")
+            logger.debug("Unknown organisms in dataset found, index var validation skipped!")
             return
-
-        if len(dataset_organisms) > 1:
+        elif len(dataset_organisms) > 1:
+            logger.debug("There are multiple organisms in dataset")
             self._organism = MultiSpecies
-            return self._validate_gene_ids(clean_index, MultiSpecies)
+            missing_genes_mask = self._validate_gene_ids(clean_index, MultiSpecies)
 
         logger.debug("Finished checking var index!")
-        return
+        return missing_genes_mask
 
     def _validate_gene_ids(
         self,
@@ -368,8 +372,10 @@ class UploadValidator:
 
         if missing_mask.any():
             if organism is MultiSpecies:
+                logger.debug("Gene names are from mixes species!")
                 self._multi_exception.append(AnnDataMixedSpeciesGenes())
             else:
+                logger.debug("Gene names are not standard!")
                 self._multi_exception.append(
                     AnnDataGenesNotInReference(n_missing=missing_mask.sum())
                 )
