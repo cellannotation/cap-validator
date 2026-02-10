@@ -73,12 +73,12 @@ class CapMultiException(CapException):
 
 class AnnDataMissingCountMatrix(CapException):
     name = "AnnDataMissingCountMatrix"
-    message = "Count matrix is missing in both `.X` and `.raw.X`."
+    message = "Matrix is missing in both `.X` and `.raw.X`."
 
 
 class AnnDataInvalidCountMatrix(CapException):
     name = "AnnDataInvalidCountMatrix"
-    message = "Count matrix contains invalid values."
+    message = "Matrix values must be non-negative integers."
 
 
 class AnnDataMissingEmbeddings(CapException):

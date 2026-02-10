@@ -121,9 +121,7 @@ class UploadValidator:
 
         if not self._check_is_positive_integers(cap_adata):
             self._multi_exception.append(
-                AnnDataInvalidCountMatrix(
-                    details="Values must be non-negative integers."
-                )
+                AnnDataInvalidCountMatrix()
             )
 
     @staticmethod
