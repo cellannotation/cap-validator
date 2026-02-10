@@ -22,7 +22,6 @@ from .errors import (
     AnnDataMissingObsColumns,
     AnnDataMissingVarIndex,
     AnnDataNumericVarIndex,
-    AnnDataMixedSpeciesGenes,
     AnnDataVarNotSubsetOfRawVar,
     AnnDataGeneIndexIsNotUnique,
     AnnDataGenesNotInReference,
@@ -376,14 +375,10 @@ class UploadValidator:
         missing_mask = ~ens_ids.isin(df["ENSEMBL_gene"])
 
         if missing_mask.any():
-            if organism is MultiSpecies:
-                logger.debug("Gene names are from mixes species!")
-                self._multi_exception.append(AnnDataMixedSpeciesGenes())
-            else:
-                logger.debug("Gene names are not standard!")
-                self._multi_exception.append(
-                    AnnDataGenesNotInReference()
-                )
+            logger.debug("Gene names are not standard!")
+            self._multi_exception.append(
+                AnnDataGenesNotInReference()
+            )
             return missing_mask
 
         return None

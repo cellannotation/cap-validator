@@ -137,13 +137,6 @@ class AnnDataVarNotSubsetOfRawVar(AnnDataNonStandardVarError):
     message = "`var.index` must be a subset of `raw.var.index`."
 
 
-class AnnDataMixedSpeciesGenes(AnnDataNonStandardVarError):
-    name = "AnnDataMixedSpeciesGenes"
-    message = (
-        "Multiple organisms detected. "
-        "Gene identifiers must be orthologous Homo sapiens ENSEMBL genes."
-    )
-
 class AnnDataGeneIndexIsNotUnique(AnnDataNonStandardVarError):
     name = "AnnDataGeneIndexIsNotUnique"
 
@@ -151,6 +144,7 @@ class AnnDataGeneIndexIsNotUnique(AnnDataNonStandardVarError):
         self.message = (
             "Gene identifiers must be unique."
         )
+
 
 class AnnDataGenesNotInReference(AnnDataNonStandardVarError):
     name = "AnnDataGenesNotInReference"
