@@ -348,7 +348,11 @@ class UploadValidator:
         ens_ids: pd.Index,
         organism: Organism,
     ) -> Optional[pd.Series]:
-
+        """
+        The method finds missing genes from gene map for given organism. 
+        Return None if all genes are valid. 
+        Else return pd.Series of boolean mask of missing genes.
+        """
         if ens_ids.empty or pd.api.types.is_any_real_numeric_dtype(ens_ids):
             self._multi_exception.append(AnnDataNumericVarIndex())
             return
