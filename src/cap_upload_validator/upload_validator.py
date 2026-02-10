@@ -23,9 +23,7 @@ from .errors import (
     AnnDataMissingVarIndex,
     AnnDataNumericVarIndex,
     AnnDataVarNotSubsetOfRawVar,
-    AnnDataUnsupportedOrganism,
     AnnDataGenesNotInReference,
-    AnnDataDuplicateGenes,
     BadAnnDataFile,
     AnnDataNoneInGeneralMetadata,
     CSCMatrixInX,
@@ -296,51 +294,76 @@ class UploadValidator:
         self._ensembl_ids = clean_index
 
         if not clean_index.is_unique:
-            self._multi_exception.append(
-                AnnDataDuplicateGenes(
-                    details="Duplicate gene IDs found after removing version suffixes."
-                )
-            )
+            self._multi_exception.append(AnnDataGenesNotInReference(n_missing=0))
             return
 
+        # var and raw.var
         if cap_adata.raw is not None and cap_adata.raw.var is not None:
             if not index.isin(cap_adata.raw.var.index).all():
                 self._multi_exception.append(AnnDataVarNotSubsetOfRawVar())
                 return
 
-        dataset_organisms = self._get_dataset_organisms(cap_adata)
+        # organism detection
+        known_organisms = {HomoSapiens.name, MusMusculus.name}
+        obs_keys = cap_adata.obs_keys()
 
-        if len(dataset_organisms) == 0:
-            logger.debug("No organism info found; skipping gene validation.")
-            return
+        if ORGANISM_COLUMN in obs_keys:
+            dataset_organisms = cap_adata.obs[ORGANISM_COLUMN].unique().tolist()
+            dataset_organisms = [o for o in dataset_organisms if o]
+            dataset_organisms = list(map(str_to_organism, dataset_organisms))
 
+        elif ORGANISM_ONT_ID_COLUMN in obs_keys:
+            if ORGANISM_ONT_ID_COLUMN not in cap_adata.obs.columns:
+                cap_adata.read_obs(columns=[ORGANISM_ONT_ID_COLUMN])
+
+            org_ids = cap_adata.obs[ORGANISM_ONT_ID_COLUMN].unique().tolist()
+            org_ids = [o for o in org_ids if o]
+            dataset_organisms = list(map(ontology_id_to_organism, org_ids))
+
+        else:
+            dataset_organisms = []
+
+        logger.debug(f"Organism(s) in dataset = {dataset_organisms}")
+
+        # validate organism
         if len(dataset_organisms) == 1:
             organism = dataset_organisms[0]
             self._organism = organism
 
-            if organism.name not in {HomoSapiens.name, MusMusculus.name}:
-                self._multi_exception.append(AnnDataUnsupportedOrganism())
-                return
+            if organism.name in known_organisms:
+                return self._validate_gene_ids(clean_index, organism)
 
-            return self._validate_gene_ids(clean_index, organism)
+            # unknown organism => skip validation
+            logger.debug("Unknown organism found; skipping gene validation.")
+            return
 
-        # multi-species
-        self._organism = MultiSpecies
-        return self._validate_gene_ids(clean_index, MultiSpecies)
-    
+        if len(dataset_organisms) > 1:
+            self._organism = MultiSpecies
+            return self._validate_gene_ids(clean_index, MultiSpecies)
+
+        logger.debug("Finished checking var index!")
+        return
+
     def _validate_gene_ids(
         self,
         ens_ids: pd.Index,
         organism: Organism,
     ) -> Optional[pd.Series]:
 
+        if ens_ids.empty or pd.api.types.is_any_real_numeric_dtype(ens_ids):
+            self._multi_exception.append(AnnDataNumericVarIndex())
+            return
+
         df = GeneMap.data_frame(organisms=organism)
         missing_mask = ~ens_ids.isin(df["ENSEMBL_gene"])
 
         if missing_mask.any():
-            self._multi_exception.append(
-                AnnDataGenesNotInReference(n_missing=missing_mask.sum())
-            )
+            if organism is MultiSpecies:
+                self._multi_exception.append(AnnDataMixedSpeciesGenes())
+            else:
+                self._multi_exception.append(
+                    AnnDataGenesNotInReference(n_missing=missing_mask.sum())
+                )
             return missing_mask
 
         return None

@@ -137,14 +137,6 @@ class AnnDataVarNotSubsetOfRawVar(AnnDataVarError):
     message = "`var.index` must be a subset of `raw.var.index`."
 
 
-class AnnDataUnsupportedOrganism(AnnDataVarError):
-    name = "AnnDataUnsupportedOrganism"
-    message = (
-        "The organism in the dataset is not supported. "
-        "Currently supported: Homo sapiens and Mus musculus."
-    )
-
-
 class AnnDataMixedSpeciesGenes(AnnDataVarError):
     name = "AnnDataMixedSpeciesGenes"
     message = (
