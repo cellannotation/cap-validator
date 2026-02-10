@@ -121,9 +121,7 @@ class UploadValidator:
             return
 
         if not self._check_is_positive_integers(cap_adata):
-            self._multi_exception.append(
-                AnnDataInvalidCountMatrix()
-            )
+            self._multi_exception.append(AnnDataInvalidCountMatrix())
 
         logger.debug("Finish checking X")
 
@@ -161,9 +159,7 @@ class UploadValidator:
         if cap_adata.obsm is None:
             reason = "Obsm is not found in anndata!"
             logger.debug(reason)
-            self._multi_exception.append(
-                AnnDataMissingEmbeddings(reason)
-            )
+            self._multi_exception.append(AnnDataMissingEmbeddings(reason))
             return
 
         n_cells = cap_adata.shape[0]
@@ -172,9 +168,7 @@ class UploadValidator:
         if not obsm_keys:
             reason = "Obsm exists but contains no keys."
             logger.debug(reason)
-            self._multi_exception.append(
-                AnnDataMissingEmbeddings(reason)
-            )
+            self._multi_exception.append(AnnDataMissingEmbeddings(reason))
             return
 
         embedding_keys = [k for k in obsm_keys if k.startswith(EMBEDDING_PREFIX)]
@@ -182,9 +176,7 @@ class UploadValidator:
         if not embedding_keys:
             reason = f"Obsm keys found: {obsm_keys}, but none start with required prefix '{EMBEDDING_PREFIX}'."
             logger.debug(reason)
-            self._multi_exception.append(
-                AnnDataMissingEmbeddings(reason)
-            )
+            self._multi_exception.append(AnnDataMissingEmbeddings(reason))
             return
 
         errors = []
@@ -193,15 +185,11 @@ class UploadValidator:
             entity = cap_adata.obsm[key]
 
             if not isinstance(entity, Dataset):
-                errors.append(
-                    f"{key}: expected h5py.Dataset, found {type(entity).__name__}"
-                )
+                errors.append(f"{key}: expected h5py.Dataset, found {type(entity).__name__}")
                 continue
 
             if entity.shape != (n_cells, 2):
-                errors.append(
-                    f"{key}: invalid shape {entity.shape}, expected ({n_cells}, 2)"
-                )
+                errors.append(f"{key}: invalid shape {entity.shape}, expected ({n_cells}, 2)")
                 continue
 
             # Found at least one valid embedding, so success case
@@ -210,9 +198,7 @@ class UploadValidator:
         # No valid embeddings found
         reason = "Embedding candidates found but invalid:\n" + "\n".join(errors)
         logger.debug(reason)
-        self._multi_exception.append(
-            AnnDataMissingEmbeddings(reason)
-        )
+        self._multi_exception.append(AnnDataMissingEmbeddings(reason))
 
         logger.debug("Finished checking obsm!")
 
@@ -226,9 +212,7 @@ class UploadValidator:
         if cap_adata.obs is None or not obs_keys:
             reason = ".obs is missing completely."
             logger.debug(reason)
-            self._multi_exception.append(
-                AnnDataMissingObsColumns(reason)
-            )
+            self._multi_exception.append(AnnDataMissingObsColumns(reason))
             return
 
         missing_columns = []
@@ -262,17 +246,13 @@ class UploadValidator:
         if missing_columns:
             reason = "Missing required obs columns: " + ", ".join(missing_columns)
             logger.debug(reason)
-            self._multi_exception.append(
-                AnnDataMissingObsColumns(reason)
-            )
+            self._multi_exception.append(AnnDataMissingObsColumns(reason))
 
         # Report empty/None columns
         if empty_columns:
             reason = "Required obs columns contain empty/None values: " + ", ".join(empty_columns)
             logger.debug(reason)
-            self._multi_exception.append(
-                AnnDataNoneInGeneralMetadata(reason)
-            )
+            self._multi_exception.append(AnnDataNoneInGeneralMetadata(reason))
 
         logger.debug("Finished checking obs!")
 
@@ -376,9 +356,7 @@ class UploadValidator:
 
         if missing_mask.any():
             logger.debug("Gene names are not standard!")
-            self._multi_exception.append(
-                AnnDataGenesNotInReference()
-            )
+            self._multi_exception.append(AnnDataGenesNotInReference())
             return missing_mask
 
         return None
