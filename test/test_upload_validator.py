@@ -29,7 +29,7 @@ from cap_upload_validator.gene_mapping import (
 from cap_upload_validator.errors import (
     AnnDataMissingEmbeddings,
     AnnDataMissingObsColumns,
-    AnnDataVarError,
+    AnnDataNonStandardVarError,
     CapMultiException,
     AnnDataNoneInGeneralMetadata,
     CSCMatrixInX,
@@ -154,7 +154,7 @@ def test_var_index():
     adata.write_h5ad(filename=file_path)
     try:
         check_var_index()
-    except AnnDataVarError:
+    except AnnDataNonStandardVarError:
         pass
     except Exception as e:
         assert False, f"Unpredicted error: {e}"
@@ -174,7 +174,7 @@ def test_var_index():
     adata.write_h5ad(filename=file_path)
     try:
         check_var_index()
-    except AnnDataVarError:
+    except AnnDataNonStandardVarError:
         pass
     except Exception as e:
         assert False, f"Unpredicted error: {e}"

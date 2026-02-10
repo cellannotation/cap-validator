@@ -118,26 +118,26 @@ class AnnDataNoneInGeneralMetadata(CapException):
         """
 
 
-class AnnDataVarError(CapException):
-    name = "AnnDataVarError"
+class AnnDataNonStandardVarError(CapException):
+    name = "AnnDataNonStandardVarError"
 
 
-class AnnDataMissingVarIndex(AnnDataVarError):
+class AnnDataMissingVarIndex(AnnDataNonStandardVarError):
     name = "AnnDataMissingVarIndex"
     message = "The `.var.index` is missing or empty."
 
 
-class AnnDataNumericVarIndex(AnnDataVarError):
+class AnnDataNumericVarIndex(AnnDataNonStandardVarError):
     name = "AnnDataNumericVarIndex"
     message = "The `.var.index` contains numeric values instead of gene identifiers."
 
 
-class AnnDataVarNotSubsetOfRawVar(AnnDataVarError):
+class AnnDataVarNotSubsetOfRawVar(AnnDataNonStandardVarError):
     name = "AnnDataVarNotSubsetOfRawVar"
     message = "`var.index` must be a subset of `raw.var.index`."
 
 
-class AnnDataMixedSpeciesGenes(AnnDataVarError):
+class AnnDataMixedSpeciesGenes(AnnDataNonStandardVarError):
     name = "AnnDataMixedSpeciesGenes"
     message = (
         "Multiple organisms detected. "
@@ -145,7 +145,7 @@ class AnnDataMixedSpeciesGenes(AnnDataVarError):
     )
 
 
-class AnnDataGenesNotInReference(AnnDataVarError):
+class AnnDataGenesNotInReference(AnnDataNonStandardVarError):
     name = "AnnDataGenesNotInReference"
 
     def __init__(self, n_missing: int):
