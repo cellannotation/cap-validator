@@ -353,7 +353,13 @@ class UploadValidator:
         Return None if all genes are valid. 
         Else return pd.Series of boolean mask of missing genes.
         """
-        if ens_ids.empty or pd.api.types.is_any_real_numeric_dtype(ens_ids):
+        if ens_ids.empty:
+            self._multi_exception.append(AnnDataMissingVarIndex())
+            logger.debug("Gene names are missed!")
+            return
+
+        if pd.api.types.is_any_real_numeric_dtype(ens_ids):
+            logger.debug("Gene names are numeric!")
             self._multi_exception.append(AnnDataNumericVarIndex())
             return
 
