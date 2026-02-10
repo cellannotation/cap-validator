@@ -71,9 +71,14 @@ class CapMultiException(CapException):
         return self.ex_list
 
 
-class AnnDataFileMissingCountMatrix(CapException):
-    name = "AnnDataFileMissingCountMatrix"
-    message = "DataFile Incorrect format: raw data matrix is missing in .raw.X or .X."
+class AnnDataMissingCountMatrix(CapException):
+    name = "AnnDataMissingCountMatrix"
+    message = "Count matrix is missing in both `.X` and `.raw.X`."
+
+
+class AnnDataInvalidCountMatrix(CapException):
+    name = "AnnDataInvalidCountMatrix"
+    message = "Count matrix contains invalid values."
 
 
 class AnnDataMissingEmbeddings(CapException):
@@ -113,16 +118,48 @@ class AnnDataNoneInGeneralMetadata(CapException):
         """
 
 
-class AnnDataNonStandardVarError(CapException):
-    name = "AnnDataNonStandardVarError"
-    message = \
-        """
-            File does not contain valid ENSEMBL terms in var.
-            We currently support Homo sapiens and Mus musculus.
-            In the case of multiple species in the dataset, orthologous Homo sapiens genes are required.
-            If there are other species you wish to upload to CAP, please contact
-            support@celltype.info and we will work to accommodate your request.
-        """ 
+class AnnDataVarError(CapException):
+    name = "AnnDataVarError"
+
+
+class AnnDataMissingVarIndex(AnnDataVarError):
+    name = "AnnDataMissingVarIndex"
+    message = "The `.var.index` is missing or empty."
+
+
+class AnnDataNumericVarIndex(AnnDataVarError):
+    name = "AnnDataNumericVarIndex"
+    message = "The `.var.index` contains numeric values instead of gene identifiers."
+
+
+class AnnDataVarNotSubsetOfRawVar(AnnDataVarError):
+    name = "AnnDataVarNotSubsetOfRawVar"
+    message = "`var.index` must be a subset of `raw.var.index`."
+
+
+class AnnDataUnsupportedOrganism(AnnDataVarError):
+    name = "AnnDataUnsupportedOrganism"
+    message = (
+        "The organism in the dataset is not supported. "
+        "Currently supported: Homo sapiens and Mus musculus."
+    )
+
+
+class AnnDataMixedSpeciesGenes(AnnDataVarError):
+    name = "AnnDataMixedSpeciesGenes"
+    message = (
+        "Multiple organisms detected. "
+        "Gene identifiers must be orthologous Homo sapiens ENSEMBL genes."
+    )
+
+
+class AnnDataGenesNotInReference(AnnDataVarError):
+    name = "AnnDataGenesNotInReference"
+
+    def __init__(self, n_missing: int):
+        self.message = (
+            f"{n_missing} gene identifiers were not found in the reference gene map."
+        )
 
 
 class CSCMatrixInX(CapException):

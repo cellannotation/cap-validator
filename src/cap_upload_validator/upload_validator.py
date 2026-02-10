@@ -17,9 +17,15 @@ from .gene_mapping import (
 from .errors import (
     CapMultiException,
     AnnDataFileMissingCountMatrix,
+    AnnDataInvalidCountMatrix,
     AnnDataMissingEmbeddings,
     AnnDataMissingObsColumns,
-    AnnDataNonStandardVarError,
+    AnnDataMissingVarIndex,
+    AnnDataNumericVarIndex,
+    AnnDataVarNotSubsetOfRawVar,
+    AnnDataUnsupportedOrganism,
+    AnnDataGenesNotInReference,
+    AnnDataDuplicateGenes,
     BadAnnDataFile,
     AnnDataNoneInGeneralMetadata,
     CSCMatrixInX,
@@ -61,7 +67,9 @@ class UploadValidator:
         logger.debug("Begin anndata file validation...")
 
         if not str(self._adata_path).endswith(".h5ad"):
-            raise BadAnnDataFile
+            raise BadAnnDataFile(
+                details=f"Expected '.h5ad' file, but got: {self._adata_path}"
+            )
         
         with read_h5ad(self._adata_path, edit=False) as cap_adata:
             cap_adata.read_obs(columns=GENERAL_METADATA)  # TODO: read all columns?
@@ -87,7 +95,9 @@ class UploadValidator:
         logger.debug("Begin finding missing genes...")
         
         if not str(self._adata_path).endswith(".h5ad"):
-            raise BadAnnDataFile
+            raise BadAnnDataFile(
+                details=f"Expected '.h5ad' file, but got: {self._adata_path}"
+            )
         
         missing_genes = None
         with read_h5ad(self._adata_path, edit=False) as cap_adata:
@@ -104,11 +114,18 @@ class UploadValidator:
         
 
     def _check_X(self, cap_adata: CapAnnData) -> None:
-        logger.debug("Begin checking X")
         X = cap_adata.raw.X if cap_adata.raw is not None else cap_adata.X
-        if X is None or not self._check_is_positive_integers(cap_adata):
+
+        if X is None:
             self._multi_exception.append(AnnDataFileMissingCountMatrix())
-        logger.debug("Finished checking X!")
+            return
+
+        if not self._check_is_positive_integers(cap_adata):
+            self._multi_exception.append(
+                AnnDataInvalidCountMatrix(
+                    details="Values must be non-negative integers."
+                )
+            )
 
     @staticmethod
     def has_only_integers(arr: np.ndarray) -> bool:
@@ -264,87 +281,70 @@ class UploadValidator:
 
     def _check_var_index(self, cap_adata: CapAnnData) -> Optional[pd.Series]:
         logger.debug("Start checking var index...")
+
         index = cap_adata.var.index
+
+        if index is None or index.empty:
+            self._multi_exception.append(AnnDataMissingVarIndex())
+            return
+
+        if pd.api.types.is_any_real_numeric_dtype(index):
+            self._multi_exception.append(AnnDataNumericVarIndex())
+            return
+
         clean_index = self._remove_gene_version(index)
         self._ensembl_ids = clean_index
 
         if not clean_index.is_unique:
-            logger.debug("There are non unique gene ids in .var.index!")
-            self._multi_exception.append(AnnDataNonStandardVarError())
-            return 
+            self._multi_exception.append(
+                AnnDataDuplicateGenes(
+                    details="Duplicate gene IDs found after removing version suffixes."
+                )
+            )
+            return
 
-        # Check if the var.index is a subset of raw.var.index
         if cap_adata.raw is not None and cap_adata.raw.var is not None:
-            logger.debug("As of raw exists, checking that var.index is a subset of raw.var.index!")
             if not index.isin(cap_adata.raw.var.index).all():
-                self._multi_exception.append(AnnDataNonStandardVarError())
+                self._multi_exception.append(AnnDataVarNotSubsetOfRawVar())
                 return
 
-        # Check the number of organisms in the dataset
-        known_organisms = [HomoSapiens, MusMusculus] # Only Human and Mouse supported this moment
-        known_organisms_values = {ko.name for ko in known_organisms}
-        obs_keys = cap_adata.obs_keys()
-        if ORGANISM_COLUMN in obs_keys:
-            dataset_organisms = cap_adata.obs[ORGANISM_COLUMN].unique().tolist()
-            if "" in dataset_organisms:
-                dataset_organisms.remove("")
-            dataset_organisms = list(map(str_to_organism, dataset_organisms))
-        elif ORGANISM_ONT_ID_COLUMN in obs_keys:
-            if ORGANISM_ONT_ID_COLUMN not in cap_adata.obs.columns:
-                cap_adata.read_obs(columns=[ORGANISM_ONT_ID_COLUMN])
-            org_ont_ids = cap_adata.obs[ORGANISM_ONT_ID_COLUMN].unique().tolist()
-            if "" in org_ont_ids:
-                org_ont_ids.remove("")
-            dataset_organisms = list(map(ontology_id_to_organism, org_ont_ids))
-        else:
-            dataset_organisms = []
-        logger.debug(f"Organism(s) in dataset = {dataset_organisms}, known organisms = {known_organisms_values}")
-       
-        missing_genes_mask = None
-        # Check ENSEMBL ids for supported organism
+        dataset_organisms = self._get_dataset_organisms(cap_adata)
+
+        if len(dataset_organisms) == 0:
+            logger.debug("No organism info found; skipping gene validation.")
+            return
+
         if len(dataset_organisms) == 1:
             organism = dataset_organisms[0]
             self._organism = organism
-            if organism.name in known_organisms_values:
-                logger.debug("There is the only known organisms in dataset, so we must check for Unsemble IDs in var.index!")
-                missing_genes_mask = self._validate_gene_ids(ens_ids=clean_index, organism=organism)
-            else:
-                logger.debug("Unknown organisms in dataset found, index var validation skipped!")
-        elif len(dataset_organisms) > 1:
-            logger.debug("There are multiple organisms in dataset")
-            self._organism = MultiSpecies
-            missing_genes_mask = self._validate_gene_ids(
-                ens_ids=clean_index,
-                organism=self._organism,
-                )
-        logger.debug("Finished checking var index!")
-        return missing_genes_mask
+
+            if organism.name not in {HomoSapiens.name, MusMusculus.name}:
+                self._multi_exception.append(AnnDataUnsupportedOrganism())
+                return
+
+            return self._validate_gene_ids(clean_index, organism)
+
+        # multi-species
+        self._organism = MultiSpecies
+        return self._validate_gene_ids(clean_index, MultiSpecies)
     
     def _validate_gene_ids(
-            self,
-            ens_ids: pd.Series,
-            organism: str,
-        ) -> Optional[pd.Series]:
-        """
-        The method finds missing genes from gene map for given organism. 
-        Return None if all genes are valid. 
-        Else return pd.Series of boolean mask of missing genes.
-        """
-        if ens_ids.empty or pd.api.types.is_any_real_numeric_dtype(ens_ids):
-            # Gene names are missed
-            logger.debug("Gene names are missed!")
-            self._multi_exception.append(AnnDataNonStandardVarError())
-            return
-        
-        # Check genes with gene maps
+        self,
+        ens_ids: pd.Index,
+        organism: Organism,
+    ) -> Optional[pd.Series]:
+
         df = GeneMap.data_frame(organisms=organism)
-        missing_genes_mask = ~ens_ids.isin(df['ENSEMBL_gene'])
-        if missing_genes_mask.any():
-            # Gene names are non standard
-            logger.debug("Gene names are not standard!")
-            self._multi_exception.append(AnnDataNonStandardVarError())
-            return missing_genes_mask
-            
+        missing_mask = ~ens_ids.isin(df["ENSEMBL_gene"])
+
+        if missing_mask.any():
+            self._multi_exception.append(
+                AnnDataGenesNotInReference(n_missing=missing_mask.sum())
+            )
+            return missing_mask
+
+        return None
+
     @staticmethod
     def _remove_gene_version(ensemble_ids: pd.Index) -> pd.Index:
         """
