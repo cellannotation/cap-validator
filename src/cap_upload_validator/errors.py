@@ -144,13 +144,20 @@ class AnnDataMixedSpeciesGenes(AnnDataNonStandardVarError):
         "Gene identifiers must be orthologous Homo sapiens ENSEMBL genes."
     )
 
+class AnnDataGeneIndexIsNotUnique(AnnDataNonStandardVarError):
+    name = "AnnDataGeneIndexIsNotUnique"
+
+    def __init__(self):
+        self.message = (
+            "Gene identifiers must be unique."
+        )
 
 class AnnDataGenesNotInReference(AnnDataNonStandardVarError):
     name = "AnnDataGenesNotInReference"
 
-    def __init__(self, n_missing: int):
+    def __init__(self):
         self.message = (
-            f"{n_missing} gene identifiers were not found in the reference gene map."
+            f"Gene identifiers were not found in the reference gene map."
         )
 
 

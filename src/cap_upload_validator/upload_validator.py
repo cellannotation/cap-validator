@@ -24,6 +24,7 @@ from .errors import (
     AnnDataNumericVarIndex,
     AnnDataMixedSpeciesGenes,
     AnnDataVarNotSubsetOfRawVar,
+    AnnDataGeneIndexIsNotUnique,
     AnnDataGenesNotInReference,
     BadAnnDataFile,
     AnnDataNoneInGeneralMetadata,
@@ -298,7 +299,8 @@ class UploadValidator:
         self._ensembl_ids = clean_index
 
         if not clean_index.is_unique:
-            self._multi_exception.append(AnnDataGenesNotInReference(n_missing=0))
+            logger.debug("There are non unique gene ids in .var.index!")
+            self._multi_exception.append(AnnDataGeneIndexIsNotUnique())
             return
 
         # Check if the var.index is a subset of raw.var.index
@@ -380,7 +382,7 @@ class UploadValidator:
             else:
                 logger.debug("Gene names are not standard!")
                 self._multi_exception.append(
-                    AnnDataGenesNotInReference(n_missing=missing_mask.sum())
+                    AnnDataGenesNotInReference()
                 )
             return missing_mask
 
