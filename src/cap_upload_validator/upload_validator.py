@@ -16,7 +16,7 @@ from .gene_mapping import (
 )
 from .errors import (
     CapMultiException,
-    AnnDataFileMissingCountMatrix,
+    AnnDataMissingCountMatrix,
     AnnDataInvalidCountMatrix,
     AnnDataMissingEmbeddings,
     AnnDataMissingObsColumns,
@@ -116,7 +116,7 @@ class UploadValidator:
         X = cap_adata.raw.X if cap_adata.raw is not None else cap_adata.X
 
         if X is None:
-            self._multi_exception.append(AnnDataFileMissingCountMatrix())
+            self._multi_exception.append(AnnDataMissingCountMatrix())
             return
 
         if not self._check_is_positive_integers(cap_adata):
