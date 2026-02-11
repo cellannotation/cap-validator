@@ -98,13 +98,17 @@ class AnnDataMissingObs(CapException):
 class AnnDataMissingObsColumns(CapException):
     name = "AnnDataMissingObsColumns"
 
-    def __init__(self, details: str = ""):
+    def __init__(self, missing_columns: list[str] = None):
         msg = (
             "Required obs metadata is missing. File must contain "
             "'assay', 'disease', 'organism', 'tissue' "
             "or corresponding '<x>_ontology_term_id' fields."
         )
-        self.message = f"{msg}\nDetails: {details}" if details else msg
+        if missing_columns:
+            cols_str = ", ".join(missing_columns)
+            self.message = f"{msg}\nMissing columns: {cols_str}"
+        else:
+            self.message = msg
 
 
 class AnnDataNoneInGeneralMetadata(CapException):

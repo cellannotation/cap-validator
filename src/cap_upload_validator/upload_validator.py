@@ -231,9 +231,8 @@ class UploadValidator:
 
         # Report missing columns
         if missing_columns:
-            reason = "Missing required obs columns: " + ", ".join(missing_columns)
-            logger.debug(reason)
-            self._multi_exception.append(AnnDataMissingObsColumns(reason))
+            logger.debug("Missing required obs columns: " + ", ".join(missing_columns))
+            self._multi_exception.append(AnnDataMissingObsColumns(missing_columns=missing_columns))
 
         # Report empty/None columns
         if empty_columns:
