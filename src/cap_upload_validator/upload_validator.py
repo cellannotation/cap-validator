@@ -27,7 +27,7 @@ from .errors import (
     AnnDataGeneIndexIsNotUnique,
     AnnDataUnsupportedGenes,
     BadAnnDataFile,
-    AnnDataNoneInGeneralMetadata,
+    AnnDataEmptyOrNoneInGeneralMetadata,
     CSCMatrixInX,
 )
 from typing import Optional
@@ -226,7 +226,7 @@ class UploadValidator:
                 ", ".join(sorted(none_columns)) if none_columns else "—",
             )
             self._multi_exception.append(
-                AnnDataNoneInGeneralMetadata(
+                AnnDataEmptyOrNoneInGeneralMetadata(
                     none_columns=list(none_columns),
                     empty_columns=list(empty_columns),
                 )

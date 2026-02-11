@@ -111,8 +111,8 @@ class AnnDataMissingObsColumns(CapException):
             self.message = msg
 
 
-class AnnDataNoneInGeneralMetadata(CapException):
-    name = "AnnDataNoneInGeneralMetadata"
+class AnnDataEmptyOrNoneInGeneralMetadata(CapException):
+    name = "AnnDataEmptyOrNoneInGeneralMetadata"
 
     def __init__(
         self,

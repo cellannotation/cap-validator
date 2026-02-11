@@ -29,7 +29,7 @@ from cap_upload_validator.errors import (
     AnnDataMissingObsColumns,
     AnnDataNonStandardVarError,
     CapMultiException,
-    AnnDataNoneInGeneralMetadata,
+    AnnDataEmptyOrNoneInGeneralMetadata,
     CSCMatrixInX,
 )
 
@@ -258,7 +258,7 @@ def test_ontology_id_instead_general_metadata(names_provided, with_none):
     v._multi_exception.raise_on_append = True
 
     if with_none:
-        context = pytest.raises(AnnDataNoneInGeneralMetadata)
+        context = pytest.raises(AnnDataEmptyOrNoneInGeneralMetadata)
     else:
         context = nullcontext()
     
