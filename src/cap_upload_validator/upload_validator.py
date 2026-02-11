@@ -67,9 +67,7 @@ class UploadValidator:
         logger.debug("Begin anndata file validation...")
 
         if not str(self._adata_path).endswith(".h5ad"):
-            raise BadAnnDataFile(
-                details=f"Expected '.h5ad' file, but got: {self._adata_path}"
-            )
+            raise BadAnnDataFile()
         
         with read_h5ad(self._adata_path, edit=False) as cap_adata:
             cap_adata.read_obs(columns=GENERAL_METADATA)  # TODO: read all columns?
@@ -95,9 +93,7 @@ class UploadValidator:
         logger.debug("Begin finding missing genes...")
         
         if not str(self._adata_path).endswith(".h5ad"):
-            raise BadAnnDataFile(
-                details=f"Expected '.h5ad' file, but got: {self._adata_path}"
-            )
+            raise BadAnnDataFile()
         
         missing_genes = None
         with read_h5ad(self._adata_path, edit=False) as cap_adata:
