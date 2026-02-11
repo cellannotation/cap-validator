@@ -99,12 +99,12 @@ class AnnDataMissingObsColumns(CapException):
     name = "AnnDataMissingObsColumns"
 
     def __init__(self, details: str = ""):
-        base_message = (
+        msg = (
             "Required obs metadata is missing. File must contain "
             "'assay', 'disease', 'organism', 'tissue' "
             "or corresponding '<x>_ontology_term_id' fields."
         )
-        self.message = f"{base_message}\nDetails: {details}" if details else base_message
+        self.message = f"{msg}\nDetails: {details}" if details else msg
 
 
 class AnnDataNoneInGeneralMetadata(CapException):
@@ -141,11 +141,20 @@ class AnnDataGeneIndexIsNotUnique(AnnDataNonStandardVarError):
     message = "`var.index` must not contain duplicates."
 
 
-class AnnDataGenesNotInReference(AnnDataNonStandardVarError):
-    name = "AnnDataGenesNotInReference"
+class AnnDataUnsupportedGenes(AnnDataNonStandardVarError):
+    name = "AnnDataUnsupportedGenes"
 
-    def __init__(self):
-        self.message = "Gene identifiers were not found in the reference gene map."
+    def __init__(self, missing_genes_count: int = None):
+        msg = (
+            "File does not contain valid ENSEMBL terms in var.\n"
+            "We currently support Homo sapiens and Mus musculus.\n"
+            "In the case of multiple species in the dataset, orthologous Homo sapiens genes are required.\n"
+            "If there are other species you wish to upload to CAP, please contact "
+            "support@celltype.info and we will work to accommodate your request."
+        )
+        if missing_genes_count is not None:
+            msg += f"\nNumber of unsupported genes found: {missing_genes_count}"
+        self.message = msg
 
 
 class CSCMatrixInX(CapException):

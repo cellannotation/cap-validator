@@ -25,7 +25,7 @@ from .errors import (
     AnnDataNumericVarIndex,
     AnnDataVarNotSubsetOfRawVar,
     AnnDataGeneIndexIsNotUnique,
-    AnnDataGenesNotInReference,
+    AnnDataUnsupportedGenes,
     BadAnnDataFile,
     AnnDataNoneInGeneralMetadata,
     CSCMatrixInX,
@@ -345,8 +345,9 @@ class UploadValidator:
         missing_mask = ~ens_ids.isin(df["ENSEMBL_gene"])
 
         if missing_mask.any():
-            logger.debug("Gene names are not standard!")
-            self._multi_exception.append(AnnDataGenesNotInReference())
+            missing_genes_count = missing_mask.sum()
+            logger.debug(f"{missing_genes_count} gene(s) are not standard!")
+            self._multi_exception.append(AnnDataUnsupportedGenes(missing_genes_count=missing_genes_count))
             return missing_mask
 
         return None
