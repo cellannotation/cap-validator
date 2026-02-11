@@ -318,11 +318,10 @@ class UploadValidator:
             self._organism = organism
 
             if organism.name in known_organisms:
-                logger.debug("There is the only known organisms in dataset, so we must check for Unsemble IDs in var.index!")
+                logger.debug("Single known organism found, validating gene IDs.")
                 missing_genes_mask = self._validate_gene_ids(clean_index, organism)
-
-            logger.debug("Unknown organisms in dataset found, index var validation skipped!")
-            return
+            else:
+                logger.debug("Unknown organism found, skipping gene validation.")
         elif len(dataset_organisms) > 1:
             logger.debug("There are multiple organisms in dataset")
             self._organism = MultiSpecies
