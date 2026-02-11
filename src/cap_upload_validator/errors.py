@@ -83,17 +83,11 @@ class AnnDataInvalidCountMatrix(CapException):
 
 class AnnDataMissingEmbeddings(CapException):
     name = "AnnDataMissingEmbeddings"
-
-    def __init__(self, details: str = ""):
-        base_message = (
-            "The embedding is missing or incorrectly formatted. "
-            "Embeddings must be stored in `.obsm` as [n_cells x 2] datasets "
-            "with names starting with 'X_' (e.g. X_umap, X_tsne)."
-        )
-        if details:
-            self.message = f"{base_message}\nDetails:\n{details}"
-        else:
-            self.message = base_message
+    message = (
+        "The embedding is missing or incorrectly formatted. "
+        "Embeddings must be stored in `.obsm` as [n_cells x 2] datasets "
+        "with names starting with 'X_' (e.g. X_umap, X_tsne)."
+    )
 
 
 class AnnDataMissingObs(CapException):

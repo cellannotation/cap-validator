@@ -22,12 +22,10 @@ from cap_upload_validator.upload_validator import (
 from cap_upload_validator.gene_mapping import (
     GeneMap,
     HomoSapiens,
-    MusMusculus,
-    MultiSpecies,
-    UnsupportedOrganism,
 )
 from cap_upload_validator.errors import (
     AnnDataMissingEmbeddings,
+    AnnDataMissingObs,
     AnnDataMissingObsColumns,
     AnnDataNonStandardVarError,
     CapMultiException,
@@ -108,7 +106,7 @@ def test_obs():
                 v._check_obs(ca)
                 if not correct_expected:
                     assert False, "Must not be correct obs!"
-            except AnnDataMissingObsColumns:
+            except (AnnDataMissingObsColumns, AnnDataMissingObs):
                 assert not correct_expected, "Unexpected result"
 
         check_obs(cap_adata, True)

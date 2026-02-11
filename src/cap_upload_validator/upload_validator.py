@@ -154,26 +154,23 @@ class UploadValidator:
         logger.debug("Begin checking obsm")
 
         if cap_adata.obsm is None:
-            reason = "Obsm is not found in anndata!"
-            logger.debug(reason)
-            self._multi_exception.append(AnnDataMissingEmbeddings(reason))
+            logger.debug("Obsm is not found in anndata!")
+            self._multi_exception.append(AnnDataMissingEmbeddings())
             return
 
         n_cells = cap_adata.shape[0]
         obsm_keys = list(cap_adata.obsm_keys())
 
         if not obsm_keys:
-            reason = "Obsm exists but contains no keys."
-            logger.debug(reason)
-            self._multi_exception.append(AnnDataMissingEmbeddings(reason))
+            logger.debug("Obsm exists but contains no keys.")
+            self._multi_exception.append(AnnDataMissingEmbeddings())
             return
 
         embedding_keys = [k for k in obsm_keys if k.startswith(EMBEDDING_PREFIX)]
 
         if not embedding_keys:
-            reason = f"Obsm keys found: {obsm_keys}, but none start with required prefix '{EMBEDDING_PREFIX}'."
-            logger.debug(reason)
-            self._multi_exception.append(AnnDataMissingEmbeddings(reason))
+            logger.debug(f"Obsm keys found: {obsm_keys}, but none start with required prefix '{EMBEDDING_PREFIX}'.")
+            self._multi_exception.append(AnnDataMissingEmbeddings())
             return
 
         errors = []
@@ -193,9 +190,8 @@ class UploadValidator:
             return
 
         # No valid embeddings found
-        reason = "Embedding candidates found but invalid:\n" + "\n".join(errors)
-        logger.debug(reason)
-        self._multi_exception.append(AnnDataMissingEmbeddings(reason))
+        logger.debug("Embedding candidates found but invalid:\n" + "\n".join(errors))
+        self._multi_exception.append(AnnDataMissingEmbeddings())
 
         logger.debug("Finished checking obsm!")
 
