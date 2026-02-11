@@ -96,6 +96,11 @@ class AnnDataMissingEmbeddings(CapException):
             self.message = base_message
 
 
+class AnnDataMissingObs(CapException):
+    name = "AnnDataMissingObs"
+    message = "The 'obs' is missing."
+
+
 class AnnDataMissingObsColumns(CapException):
     name = "AnnDataMissingObsColumns"
 

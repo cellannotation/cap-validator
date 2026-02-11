@@ -19,6 +19,7 @@ from .errors import (
     AnnDataMissingCountMatrix,
     AnnDataInvalidCountMatrix,
     AnnDataMissingEmbeddings,
+    AnnDataMissingObs,
     AnnDataMissingObsColumns,
     AnnDataMissingVarIndex,
     AnnDataNumericVarIndex,
@@ -204,11 +205,9 @@ class UploadValidator:
         obs_keys = list(cap_adata.obs_keys())
         logger.debug(f"Checking obs_columns = {obs_keys} for required {GENERAL_METADATA}!")
 
-        # If obs missing entirely
         if cap_adata.obs is None or not obs_keys:
-            reason = ".obs is missing completely."
-            logger.debug(reason)
-            self._multi_exception.append(AnnDataMissingObsColumns(reason))
+            logger.debug(".obs is missing completely.")
+            self._multi_exception.append(AnnDataMissingObs())
             return
 
         missing_columns = []
