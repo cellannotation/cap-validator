@@ -150,10 +150,6 @@ class UploadValidator:
         return True
 
     def _check_obsm(self, cap_adata: CapAnnData) -> None:
-        """
-        Validate presence and correctness of embeddings in .obsm.
-        Appends AnnDataMissingEmbeddings if invalid.
-        """
         logger.debug("Begin checking obsm")
 
         if cap_adata.obsm is None:
