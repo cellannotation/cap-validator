@@ -148,48 +148,26 @@ class UploadValidator:
 
     def _check_obsm(self, cap_adata: CapAnnData) -> None:
         logger.debug("Begin checking obsm")
+        if self._has_embeddings(cap_adata) is False:
+            self._multi_exception.append(AnnDataMissingEmbeddings())
+        logger.debug("Finished checking obsm!")
 
+    def _has_embeddings(self, cap_adata: CapAnnData) -> bool:
         if cap_adata.obsm is None:
             logger.debug("Obsm is not found in anndata!")
-            self._multi_exception.append(AnnDataMissingEmbeddings())
-            return
-
+            return False
+        
         n_cells = cap_adata.shape[0]
-        obsm_keys = list(cap_adata.obsm_keys())
 
-        if not obsm_keys:
-            logger.debug("Obsm exists but contains no keys.")
-            self._multi_exception.append(AnnDataMissingEmbeddings())
-            return
+        for field in cap_adata.obsm_keys():
+            if field.startswith(EMBEDDING_PREFIX):
+                entity = cap_adata.obsm[field]
+                if isinstance(entity, Dataset) and entity.shape == (n_cells, 2):
+                    # looking for dense matrix of N x 2 shape 
+                    return True
 
-        embedding_keys = [k for k in obsm_keys if k.startswith(EMBEDDING_PREFIX)]
-
-        if not embedding_keys:
-            logger.debug(f"Obsm keys found: {obsm_keys}, but none start with required prefix '{EMBEDDING_PREFIX}'.")
-            self._multi_exception.append(AnnDataMissingEmbeddings())
-            return
-
-        errors = []
-
-        for key in embedding_keys:
-            entity = cap_adata.obsm[key]
-
-            if not isinstance(entity, Dataset):
-                errors.append(f"{key}: expected h5py.Dataset, found {type(entity).__name__}")
-                continue
-
-            if entity.shape != (n_cells, 2):
-                errors.append(f"{key}: invalid shape {entity.shape}, expected ({n_cells}, 2)")
-                continue
-
-            # Found at least one valid embedding, so success case
-            return
-
-        # No valid embeddings found
-        logger.debug("Embedding candidates found but invalid:\n" + "\n".join(errors))
-        self._multi_exception.append(AnnDataMissingEmbeddings())
-
-        logger.debug("Finished checking obsm!")
+        logger.debug(f"Embeddings not found in obsm_keys = {cap_adata.obsm_keys()}!")
+        return False
 
     def _check_obs(self, cap_adata: CapAnnData) -> None:
         logger.debug("Start checking obs")
