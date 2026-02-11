@@ -141,18 +141,14 @@ class AnnDataGeneIndexIsNotUnique(AnnDataNonStandardVarError):
     name = "AnnDataGeneIndexIsNotUnique"
 
     def __init__(self):
-        self.message = (
-            "Gene identifiers must be unique."
-        )
+        self.message = "Gene identifiers must be unique."
 
 
 class AnnDataGenesNotInReference(AnnDataNonStandardVarError):
     name = "AnnDataGenesNotInReference"
 
     def __init__(self):
-        self.message = (
-            f"Gene identifiers were not found in the reference gene map."
-        )
+        self.message = "Gene identifiers were not found in the reference gene map."
 
 
 class CSCMatrixInX(CapException):
