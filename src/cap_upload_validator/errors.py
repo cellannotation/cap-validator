@@ -114,17 +114,23 @@ class AnnDataMissingObsColumns(CapException):
 class AnnDataNoneInGeneralMetadata(CapException):
     name = "AnnDataNoneInGeneralMetadata"
 
-    def __init__(self, empty_columns: list[str] = None):
+    def __init__(
+        self,
+        none_columns: list[str] | None = None,
+        empty_columns: list[str] | None = None,
+    ):
         msg = (
-            "Required obs column(s) contain empty or None values. "
-            "File must contain 'assay', 'disease', 'organism', and 'tissue' fields "
-            "or corresponding '<x>_ontology_term_id' fields with valid values."
+            "Required obs metadata contains invalid values.\n"
+            "All required fields must be filled with valid values."
         )
+
+        if none_columns:
+            msg += "\nColumns with None / NaN values: " + ", ".join(sorted(none_columns))
+
         if empty_columns:
-            cols_str = ", ".join(empty_columns)
-            self.message = f"{msg}\nColumns with missing values: {cols_str}"
-        else:
-            self.message = msg
+            msg += "\nColumns with empty values: " + ", ".join(sorted(empty_columns))
+
+        self.message = msg
 
 
 class AnnDataNonStandardVarError(CapException):

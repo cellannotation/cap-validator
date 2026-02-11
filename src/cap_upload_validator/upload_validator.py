@@ -180,8 +180,16 @@ class UploadValidator:
             self._multi_exception.append(AnnDataMissingObs())
             return
 
-        missing_columns = []
-        empty_columns = []
+        missing_columns: list[str] = []
+        none_columns: set[str] = set()
+        empty_columns: set[str] = set()
+
+        def _check_column(series: pd.Series, name: str):
+            has_none, has_empty = self._classify_missing(series)
+            if has_none:
+                none_columns.add(name)
+            if has_empty:
+                empty_columns.add(name)
 
         for col in GENERAL_METADATA:
             ont_id_col = f"{col}_ontology_term_id"
@@ -196,16 +204,14 @@ class UploadValidator:
 
             # Validate regular column values
             if col_in_obs:
-                if not self._check_df_col_for_none(cap_adata.obs[col]):
-                    empty_columns.append(col)
+                _check_column(cap_adata.obs[col], col)
 
             # Validate ontology column values
             if ont_id_col_in_obs:
                 if ont_id_col not in cap_adata.obs.columns:
                     cap_adata.read_obs(columns=[ont_id_col])
 
-                if not self._check_df_col_for_none(cap_adata.obs[ont_id_col]):
-                    empty_columns.append(ont_id_col)
+                _check_column(cap_adata.obs[ont_id_col], ont_id_col)
 
         # Report missing columns
         if missing_columns:
@@ -213,16 +219,35 @@ class UploadValidator:
             self._multi_exception.append(AnnDataMissingObsColumns(missing_columns=missing_columns))
 
         # Report empty/None columns
-        if empty_columns:
-            logger.debug("Required obs columns contain empty/None values: " + ", ".join(empty_columns))
-            self._multi_exception.append(AnnDataNoneInGeneralMetadata(empty_columns=empty_columns))
+        if none_columns or empty_columns:
+            logger.debug(
+                "Required obs columns contain empty: %s or None: %s values.",
+                ", ".join(sorted(empty_columns)) if empty_columns else "—",
+                ", ".join(sorted(none_columns)) if none_columns else "—",
+            )
+            self._multi_exception.append(
+                AnnDataNoneInGeneralMetadata(
+                    none_columns=list(none_columns),
+                    empty_columns=list(empty_columns),
+                )
+            )
 
         logger.debug("Finished checking obs!")
 
     @staticmethod
-    def _check_df_col_for_none(series: pd.Series) -> bool:
-        series = series.replace(r'^\s*$', np.nan, regex=True)
-        return pd.notna(series).all()
+    def _classify_missing(series: pd.Series) -> tuple[bool, bool]:
+        """
+        Returns:
+            has_none  -> True if None / NaN values are present
+            has_empty -> True if empty or whitespace-only strings are present
+        """
+        has_none = series.isna().any()
+
+        # Only check empties on non-null values
+        non_null = series.dropna()
+        has_empty = non_null.astype(str).str.match(r"^\s*$").any()
+
+        return has_none, has_empty
 
     def _check_var_index(self, cap_adata: CapAnnData) -> Optional[pd.Series]:
         logger.debug("Start checking var index...")
