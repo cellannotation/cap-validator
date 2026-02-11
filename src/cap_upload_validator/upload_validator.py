@@ -236,9 +236,8 @@ class UploadValidator:
 
         # Report empty/None columns
         if empty_columns:
-            reason = "Required obs columns contain empty/None values: " + ", ".join(empty_columns)
-            logger.debug(reason)
-            self._multi_exception.append(AnnDataNoneInGeneralMetadata(reason))
+            logger.debug("Required obs columns contain empty/None values: " + ", ".join(empty_columns))
+            self._multi_exception.append(AnnDataNoneInGeneralMetadata(empty_columns=empty_columns))
 
         logger.debug("Finished checking obs!")
 
