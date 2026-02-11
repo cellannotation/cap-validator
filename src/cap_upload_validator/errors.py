@@ -139,9 +139,7 @@ class AnnDataVarNotSubsetOfRawVar(AnnDataNonStandardVarError):
 
 class AnnDataGeneIndexIsNotUnique(AnnDataNonStandardVarError):
     name = "AnnDataGeneIndexIsNotUnique"
-
-    def __init__(self):
-        self.message = "Gene identifiers must be unique."
+    message = "`var.index` must not contain duplicates."
 
 
 class AnnDataGenesNotInReference(AnnDataNonStandardVarError):
