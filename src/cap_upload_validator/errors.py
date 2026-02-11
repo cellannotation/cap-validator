@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 
 class CapException(BaseException):
@@ -116,8 +116,8 @@ class AnnDataEmptyOrNoneInGeneralMetadata(CapException):
 
     def __init__(
         self,
-        none_columns: list[str] | None = None,
-        empty_columns: list[str] | None = None,
+        none_columns: Optional[List[str]] = None,
+        empty_columns: Optional[List[str]] = None,
     ):
         msg = (
             "Required obs metadata contains invalid values.\n"
