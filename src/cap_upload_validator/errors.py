@@ -78,7 +78,7 @@ class AnnDataMissingCountMatrix(CapException):
 
 class AnnDataInvalidCountMatrix(CapException):
     name = "AnnDataInvalidCountMatrix"
-    message = "Matrix values must be non-negative integers."
+    message = "Raw counts matrix values must be non-negative integers."
 
 
 class AnnDataMissingEmbeddings(CapException):
