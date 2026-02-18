@@ -18,7 +18,7 @@ class CapException(BaseException):
 
 
 class BadAnnDataFile(CapException):
-    name = 'Unknown'
+    name = 'BadAnnDataFile'
     message = 'The file format is not supported!'
 
 
@@ -57,8 +57,11 @@ class CapMultiException(CapException):
     def __str__(self) -> str:
         own_str = super().__str__()
         res_list = [own_str] + self.ex_list
-        res_message = "\n".join(map(str, res_list))
-        res_message += "\nFor details visit: \n\thttps://github.com/cellannotation/cap-validator/wiki/Validation-Errors"
+        res_message = "\n\n".join(map(str, res_list))
+        res_message += (
+            "\n\nFor details visit:\n"
+            "\thttps://github.com/cellannotation/cap-validator/wiki/Validation-Errors"
+        )
         return res_message
 
     def have_errors(self) -> bool:
