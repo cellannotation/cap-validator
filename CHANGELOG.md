@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+## [1.6.0] - 2026-02-18
+
+### Added
+
+- More dynamic error messages added.
+
 ## [1.5.2] - 2026-02-06
 
 ### Added
