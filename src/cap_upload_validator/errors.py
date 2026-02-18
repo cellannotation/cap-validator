@@ -120,7 +120,7 @@ class AnnDataEmptyOrNoneInGeneralMetadata(CapException):
         empty_columns: Optional[List[str]] = None,
     ):
         msg = (
-            "Required `.obs` metadata metadata contains missing or invalid values.\n"
+            "Required `.obs` metadata contains missing or invalid values.\n"
             "All required fields must be filled with valid values."
         )
 
