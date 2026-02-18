@@ -3,7 +3,7 @@ from typing import List, Optional
 
 class CapException(BaseException):
     name = "Unknown"
-    message = "Useless CAP exception"
+    message = "Generic CAP exception"
 
     def __str__(self) -> str:
         return f"{self.name}: {self.message}"
@@ -11,7 +11,7 @@ class CapException(BaseException):
     def __eq__(self, other):
         if isinstance(other, CapException):
             return (self.name, self.message) == (other.name, other.message)
-        raise TypeError(f"The __eq__ operation doesn't defined for CapException and {type(other)}!")
+        raise TypeError(f"The __eq__ operation is not defined for CapException and {type(other)}!")
 
     def __hash__(self):
         return hash((self.name, self.message))
@@ -19,7 +19,7 @@ class CapException(BaseException):
 
 class BadAnnDataFile(CapException):
     name = 'Unknown'
-    message = 'File format is not supported!'
+    message = 'The file format is not supported!'
 
 
 class CapMultiException(CapException):
@@ -84,15 +84,15 @@ class AnnDataInvalidCountMatrix(CapException):
 class AnnDataMissingEmbeddings(CapException):
     name = "AnnDataMissingEmbeddings"
     message = (
-        "The embedding is missing or incorrectly formatted. "
-        "Embeddings must be stored in `.obsm` as [n_cells x 2] datasets "
-        "with names starting with 'X_' (e.g. X_umap, X_tsne)."
+        "Embeddings are missing or incorrectly formatted. "
+        "They must be stored in `.obsm` as [n_cells × 2] datasets "
+        "with names starting with 'X_' (e.g., X_umap, X_tsne)."
     )
 
 
 class AnnDataMissingObs(CapException):
     name = "AnnDataMissingObs"
-    message = "The 'obs' is missing."
+    message = "The `.obs` is missing."
 
 
 class AnnDataMissingObsColumns(CapException):
@@ -100,7 +100,7 @@ class AnnDataMissingObsColumns(CapException):
 
     def __init__(self, missing_columns: list[str] = None):
         msg = (
-            "Required obs metadata is missing. File must contain "
+            "Required `.obs` metadata is missing. The file must contain "
             "'assay', 'disease', 'organism', 'tissue' "
             "or corresponding '<x>_ontology_term_id' fields."
         )
@@ -120,7 +120,7 @@ class AnnDataEmptyOrNoneInGeneralMetadata(CapException):
         empty_columns: Optional[List[str]] = None,
     ):
         msg = (
-            "Required obs metadata contains invalid values.\n"
+            "Required `.obs` metadata metadata contains missing or invalid values.\n"
             "All required fields must be filled with valid values."
         )
 
@@ -163,7 +163,7 @@ class AnnDataUnsupportedGenes(AnnDataNonStandardVarError):
     def __init__(self, missing_genes_count: int = None):
         msg = (
             "File does not contain valid ENSEMBL terms in var.\n"
-            "We currently support Homo sapiens and Mus musculus.\n"
+            "We currently support only Homo sapiens and Mus musculus.\n"
             "In the case of multiple species in the dataset, orthologous Homo sapiens genes are required.\n"
             "If there are other species you wish to upload to CAP, please contact "
             "support@celltype.info and we will work to accommodate your request."
@@ -184,6 +184,6 @@ class CSCMatrixInX(CapException):
         self.locations = locations
         loc_str = " and ".join(locations)
         self.message = (
-            f"The CSC matrix is found in {loc_str}. "
-            "Gene expression matrix must be stored in CSR or dense format!"
+            f"A CSC matrix is found in {loc_str}. "
+            "The gene expression matrix must be stored in CSR or dense format!"
         )
