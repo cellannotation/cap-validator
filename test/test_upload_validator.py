@@ -22,16 +22,14 @@ from cap_upload_validator.upload_validator import (
 from cap_upload_validator.gene_mapping import (
     GeneMap,
     HomoSapiens,
-    MusMusculus,
-    MultiSpecies,
-    UnsupportedOrganism,
 )
 from cap_upload_validator.errors import (
     AnnDataMissingEmbeddings,
+    AnnDataMissingObs,
     AnnDataMissingObsColumns,
     AnnDataNonStandardVarError,
     CapMultiException,
-    AnnDataNoneInGeneralMetadata,
+    AnnDataEmptyOrNoneInGeneralMetadata,
     CSCMatrixInX,
 )
 
@@ -108,7 +106,7 @@ def test_obs():
                 v._check_obs(ca)
                 if not correct_expected:
                     assert False, "Must not be correct obs!"
-            except AnnDataMissingObsColumns:
+            except (AnnDataMissingObsColumns, AnnDataMissingObs):
                 assert not correct_expected, "Unexpected result"
 
         check_obs(cap_adata, True)
@@ -260,7 +258,7 @@ def test_ontology_id_instead_general_metadata(names_provided, with_none):
     v._multi_exception.raise_on_append = True
 
     if with_none:
-        context = pytest.raises(AnnDataNoneInGeneralMetadata)
+        context = pytest.raises(AnnDataEmptyOrNoneInGeneralMetadata)
     else:
         context = nullcontext()
     

@@ -16,12 +16,18 @@ from .gene_mapping import (
 )
 from .errors import (
     CapMultiException,
-    AnnDataFileMissingCountMatrix,
+    AnnDataMissingCountMatrix,
+    AnnDataInvalidCountMatrix,
     AnnDataMissingEmbeddings,
+    AnnDataMissingObs,
     AnnDataMissingObsColumns,
-    AnnDataNonStandardVarError,
+    AnnDataMissingVarIndex,
+    AnnDataNumericVarIndex,
+    AnnDataVarNotSubsetOfRawVar,
+    AnnDataGeneIndexIsNotUnique,
+    AnnDataUnsupportedGenes,
     BadAnnDataFile,
-    AnnDataNoneInGeneralMetadata,
+    AnnDataEmptyOrNoneInGeneralMetadata,
     CSCMatrixInX,
 )
 from typing import Optional
@@ -61,7 +67,7 @@ class UploadValidator:
         logger.debug("Begin anndata file validation...")
 
         if not str(self._adata_path).endswith(".h5ad"):
-            raise BadAnnDataFile
+            raise BadAnnDataFile()
         
         with read_h5ad(self._adata_path, edit=False) as cap_adata:
             cap_adata.read_obs(columns=GENERAL_METADATA)  # TODO: read all columns?
@@ -87,7 +93,7 @@ class UploadValidator:
         logger.debug("Begin finding missing genes...")
         
         if not str(self._adata_path).endswith(".h5ad"):
-            raise BadAnnDataFile
+            raise BadAnnDataFile()
         
         missing_genes = None
         with read_h5ad(self._adata_path, edit=False) as cap_adata:
@@ -106,9 +112,15 @@ class UploadValidator:
     def _check_X(self, cap_adata: CapAnnData) -> None:
         logger.debug("Begin checking X")
         X = cap_adata.raw.X if cap_adata.raw is not None else cap_adata.X
-        if X is None or not self._check_is_positive_integers(cap_adata):
-            self._multi_exception.append(AnnDataFileMissingCountMatrix())
-        logger.debug("Finished checking X!")
+
+        if X is None:
+            self._multi_exception.append(AnnDataMissingCountMatrix())
+            return
+
+        if not self._check_is_positive_integers(cap_adata):
+            self._multi_exception.append(AnnDataInvalidCountMatrix())
+
+        logger.debug("Finish checking X")
 
     @staticmethod
     def has_only_integers(arr: np.ndarray) -> bool:
@@ -159,125 +171,184 @@ class UploadValidator:
 
     def _check_obs(self, cap_adata: CapAnnData) -> None:
         logger.debug("Start checking obs")
-        obs_keys = cap_adata.obs_keys()
+
+        obs_keys = list(cap_adata.obs_keys())
         logger.debug(f"Checking obs_columns = {obs_keys} for required {GENERAL_METADATA}!")
-        
+
         if cap_adata.obs is None or not obs_keys:
-            logger.warning(".obs is missing!")
-            self._multi_exception.append(AnnDataMissingObsColumns())
+            logger.debug(".obs is missing completely.")
+            self._multi_exception.append(AnnDataMissingObs())
             return
+
+        missing_columns: list[str] = []
+        none_columns: set[str] = set()
+        empty_columns: set[str] = set()
+
+        def _check_column(series: pd.Series, name: str):
+            has_none, has_empty = self._classify_missing(series)
+            if has_none:
+                none_columns.add(name)
+            if has_empty:
+                empty_columns.add(name)
 
         for col in GENERAL_METADATA:
             ont_id_col = f"{col}_ontology_term_id"
+
             col_in_obs = col in obs_keys
             ont_id_col_in_obs = ont_id_col in obs_keys
 
+            # Column missing entirely
             if not (col_in_obs or ont_id_col_in_obs):
-                logger.debug(f"Column {col} is missing in .obs!")
-                self._multi_exception.append(AnnDataMissingObsColumns(f"{col} column is missing in .obs!"))
-                return
-            else:
-                if col_in_obs:
-                    if not self._check_df_col_for_none(cap_adata.obs[col]):
-                        logger.debug(f"Column {col} contains None or empty values in .obs!")
-                        self._multi_exception.append(AnnDataNoneInGeneralMetadata(f"{col} column contains None or empty values in .obs!"))
-                        return
-                if ont_id_col_in_obs:
-                    cap_adata.read_obs([ont_id_col])
-                    if not self._check_df_col_for_none(cap_adata.obs[ont_id_col]):
-                        logger.debug(f"Column {ont_id_col} contains None or empty values in .obs!")
-                        self._multi_exception.append(AnnDataNoneInGeneralMetadata(f"{ont_id_col} column contains None or empty values in .obs!"))
-                        return
+                missing_columns.append(col)
+                continue
+
+            # Validate regular column values
+            if col_in_obs:
+                _check_column(cap_adata.obs[col], col)
+
+            # Validate ontology column values
+            if ont_id_col_in_obs:
+                if ont_id_col not in cap_adata.obs.columns:
+                    cap_adata.read_obs(columns=[ont_id_col])
+
+                _check_column(cap_adata.obs[ont_id_col], ont_id_col)
+
+        # Report missing columns
+        if missing_columns:
+            logger.debug("Missing required obs columns: " + ", ".join(missing_columns))
+            self._multi_exception.append(AnnDataMissingObsColumns(missing_columns=missing_columns))
+
+        # Report empty/None columns
+        if none_columns or empty_columns:
+            logger.debug(
+                "Required obs columns contain empty: %s or None: %s values.",
+                ", ".join(sorted(empty_columns)) if empty_columns else "—",
+                ", ".join(sorted(none_columns)) if none_columns else "—",
+            )
+            self._multi_exception.append(
+                AnnDataEmptyOrNoneInGeneralMetadata(
+                    none_columns=list(none_columns),
+                    empty_columns=list(empty_columns),
+                )
+            )
+
         logger.debug("Finished checking obs!")
 
     @staticmethod
-    def _check_df_col_for_none(series: pd.Series) -> bool:
-        series = series.replace(r'^\s*$', np.nan, regex=True)
-        return pd.notna(series).all()
+    def _classify_missing(series: pd.Series) -> tuple[bool, bool]:
+        """
+        Returns:
+            has_none  -> True if None / NaN values are present
+            has_empty -> True if empty or whitespace-only strings are present
+        """
+        has_none = series.isna().any()
+
+        # Only check empties on non-null values
+        non_null = series.dropna()
+        has_empty = non_null.astype(str).str.match(r"^\s*$").any()
+
+        return has_none, has_empty
 
     def _check_var_index(self, cap_adata: CapAnnData) -> Optional[pd.Series]:
         logger.debug("Start checking var index...")
+
         index = cap_adata.var.index
+
+        if index is None or index.empty:
+            self._multi_exception.append(AnnDataMissingVarIndex())
+            return
+
+        if pd.api.types.is_any_real_numeric_dtype(index):
+            self._multi_exception.append(AnnDataNumericVarIndex())
+            return
+
         clean_index = self._remove_gene_version(index)
         self._ensembl_ids = clean_index
 
         if not clean_index.is_unique:
             logger.debug("There are non unique gene ids in .var.index!")
-            self._multi_exception.append(AnnDataNonStandardVarError())
-            return 
+            self._multi_exception.append(AnnDataGeneIndexIsNotUnique())
+            return
 
         # Check if the var.index is a subset of raw.var.index
         if cap_adata.raw is not None and cap_adata.raw.var is not None:
             logger.debug("As of raw exists, checking that var.index is a subset of raw.var.index!")
             if not index.isin(cap_adata.raw.var.index).all():
-                self._multi_exception.append(AnnDataNonStandardVarError())
+                self._multi_exception.append(AnnDataVarNotSubsetOfRawVar())
                 return
 
         # Check the number of organisms in the dataset
-        known_organisms = [HomoSapiens, MusMusculus] # Only Human and Mouse supported this moment
-        known_organisms_values = {ko.name for ko in known_organisms}
+        known_organisms = {HomoSapiens.name, MusMusculus.name} # Only Human and Mouse supported this moment
         obs_keys = cap_adata.obs_keys()
+
         if ORGANISM_COLUMN in obs_keys:
             dataset_organisms = cap_adata.obs[ORGANISM_COLUMN].unique().tolist()
-            if "" in dataset_organisms:
-                dataset_organisms.remove("")
+            dataset_organisms = [o for o in dataset_organisms if o]
             dataset_organisms = list(map(str_to_organism, dataset_organisms))
+
         elif ORGANISM_ONT_ID_COLUMN in obs_keys:
             if ORGANISM_ONT_ID_COLUMN not in cap_adata.obs.columns:
                 cap_adata.read_obs(columns=[ORGANISM_ONT_ID_COLUMN])
-            org_ont_ids = cap_adata.obs[ORGANISM_ONT_ID_COLUMN].unique().tolist()
-            if "" in org_ont_ids:
-                org_ont_ids.remove("")
-            dataset_organisms = list(map(ontology_id_to_organism, org_ont_ids))
+
+            org_ids = cap_adata.obs[ORGANISM_ONT_ID_COLUMN].unique().tolist()
+            org_ids = [o for o in org_ids if o]
+            dataset_organisms = list(map(ontology_id_to_organism, org_ids))
+
         else:
             dataset_organisms = []
-        logger.debug(f"Organism(s) in dataset = {dataset_organisms}, known organisms = {known_organisms_values}")
-       
+
+        logger.debug(f"Organism(s) in dataset = {dataset_organisms}, known organisms = {known_organisms}")
+
         missing_genes_mask = None
         # Check ENSEMBL ids for supported organism
         if len(dataset_organisms) == 1:
             organism = dataset_organisms[0]
             self._organism = organism
-            if organism.name in known_organisms_values:
-                logger.debug("There is the only known organisms in dataset, so we must check for Unsemble IDs in var.index!")
-                missing_genes_mask = self._validate_gene_ids(ens_ids=clean_index, organism=organism)
+
+            if organism.name in known_organisms:
+                logger.debug("Single known organism found, validating gene IDs.")
+                missing_genes_mask = self._validate_gene_ids(clean_index, organism)
             else:
-                logger.debug("Unknown organisms in dataset found, index var validation skipped!")
+                logger.debug("Unknown organism found, skipping gene validation.")
         elif len(dataset_organisms) > 1:
             logger.debug("There are multiple organisms in dataset")
             self._organism = MultiSpecies
-            missing_genes_mask = self._validate_gene_ids(
-                ens_ids=clean_index,
-                organism=self._organism,
-                )
+            missing_genes_mask = self._validate_gene_ids(clean_index, MultiSpecies)
+
         logger.debug("Finished checking var index!")
         return missing_genes_mask
-    
+
     def _validate_gene_ids(
-            self,
-            ens_ids: pd.Series,
-            organism: str,
-        ) -> Optional[pd.Series]:
+        self,
+        ens_ids: pd.Index,
+        organism: Organism,
+    ) -> Optional[pd.Series]:
         """
         The method finds missing genes from gene map for given organism. 
         Return None if all genes are valid. 
         Else return pd.Series of boolean mask of missing genes.
         """
-        if ens_ids.empty or pd.api.types.is_any_real_numeric_dtype(ens_ids):
-            # Gene names are missed
+        if ens_ids.empty:
+            self._multi_exception.append(AnnDataMissingVarIndex())
             logger.debug("Gene names are missed!")
-            self._multi_exception.append(AnnDataNonStandardVarError())
             return
-        
-        # Check genes with gene maps
+
+        if pd.api.types.is_any_real_numeric_dtype(ens_ids):
+            logger.debug("Gene names are numeric!")
+            self._multi_exception.append(AnnDataNumericVarIndex())
+            return
+
         df = GeneMap.data_frame(organisms=organism)
-        missing_genes_mask = ~ens_ids.isin(df['ENSEMBL_gene'])
-        if missing_genes_mask.any():
-            # Gene names are non standard
-            logger.debug("Gene names are not standard!")
-            self._multi_exception.append(AnnDataNonStandardVarError())
-            return missing_genes_mask
-            
+        missing_mask = ~ens_ids.isin(df["ENSEMBL_gene"])
+
+        if missing_mask.any():
+            missing_genes_count = missing_mask.sum()
+            logger.debug(f"{missing_genes_count} gene(s) are not standard!")
+            self._multi_exception.append(AnnDataUnsupportedGenes(missing_genes_count=missing_genes_count))
+            return missing_mask
+
+        return None
+
     @staticmethod
     def _remove_gene_version(ensemble_ids: pd.Index) -> pd.Index:
         """
