@@ -114,6 +114,16 @@ class AnnDataMissingObsColumns(CapException):
             self.message = msg
 
 
+class AnnDataMultipleDiseaseOntologyIDs(CapException):
+    name = "AnnDataMultipleDiseaseOntologyIDs"
+    message = "Only one disease ontology ID is allowed per value."
+
+
+class AnnDataInvalidDiseaseOntologyForHuman(CapException):
+    name = "AnnDataInvalidDiseaseOntologyForHuman"
+    message = "For human samples only MONDO or PATO IDs are allowed."
+
+
 class AnnDataEmptyOrNoneInGeneralMetadata(CapException):
     name = "AnnDataEmptyOrNoneInGeneralMetadata"
 

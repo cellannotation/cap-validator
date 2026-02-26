@@ -21,6 +21,8 @@ from .errors import (
     AnnDataMissingEmbeddings,
     AnnDataMissingObs,
     AnnDataMissingObsColumns,
+    AnnDataMultipleDiseaseOntologyIDs,
+    AnnDataInvalidDiseaseOntologyForHuman,
     AnnDataMissingVarIndex,
     AnnDataNumericVarIndex,
     AnnDataVarNotSubsetOfRawVar,
@@ -39,6 +41,7 @@ EMBEDDING_PREFIX = "X_"
 ORGANISM_COLUMN = "organism"
 ORGANISM_ONT_ID_COLUMN = f"{ORGANISM_COLUMN}_ontology_term_id"
 GENERAL_METADATA = ["assay", "disease", ORGANISM_COLUMN, "tissue"]
+DISEASE_ONTOLOGY_HUMAN_PREFIXES = ("MONDO", "PATO")
 
 class UploadValidator:
 
@@ -78,8 +81,8 @@ class UploadValidator:
             self._validate_x_and_raw_x_formats(cap_adata)
             self._check_X(cap_adata)
             self._check_obsm(cap_adata)
-            self._check_obs(cap_adata)
             self._check_var_index(cap_adata)
+            self._check_obs(cap_adata) # Must be called after organism detection in _check_var_index 
 
         # Check any errors were during validation stage and raise them
         if self._multi_exception.have_errors():
@@ -213,6 +216,9 @@ class UploadValidator:
 
                 _check_column(cap_adata.obs[ont_id_col], ont_id_col)
 
+                if col == "disease":
+                    self._validate_disease_ontology(cap_adata.obs[ont_id_col])
+
         # Report missing columns
         if missing_columns:
             logger.debug("Missing required obs columns: " + ", ".join(missing_columns))
@@ -233,6 +239,41 @@ class UploadValidator:
             )
 
         logger.debug("Finished checking obs!")
+
+    def _validate_disease_ontology(self, series: pd.Series) -> None:
+        if series is None:
+            return
+
+        has_multiple_ids = False
+        has_invalid_prefix_for_human = False
+
+        for value in series.dropna():
+            value_str = str(value).strip()
+
+            if not value_str:
+                continue
+
+            # Multiple IDs restriction
+            if "," in value_str:
+                has_multiple_ids = True
+                continue
+
+            # Human-specific restriction
+            if self._organism is HomoSapiens:
+                delimiter = ":"
+                if delimiter not in value_str:
+                    continue  # format validation not in scope
+
+                prefix = value_str.split(delimiter, 1)[0]
+                if prefix not in DISEASE_ONTOLOGY_HUMAN_PREFIXES:
+                    has_invalid_prefix_for_human = True
+
+        # Append errors only once
+        if has_multiple_ids:
+            self._multi_exception.append(AnnDataMultipleDiseaseOntologyIDs())
+
+        if has_invalid_prefix_for_human:
+            self._multi_exception.append(AnnDataInvalidDiseaseOntologyForHuman())
 
     @staticmethod
     def _classify_missing(series: pd.Series) -> tuple[bool, bool]:
