@@ -104,11 +104,12 @@ class AnnDataMissingObsColumns(CapException):
     def __init__(self, missing_columns: list[str] = None):
         msg = (
             "Required `.obs` metadata is missing. The file must contain "
-            "'assay', 'disease', 'organism', 'tissue' "
-            "or corresponding '<x>_ontology_term_id' fields."
+            "`assay`, `disease`, `organism`, `tissue` "
+            "or corresponding `<x>_ontology_term_id` fields."
         )
         if missing_columns:
-            cols_str = ", ".join(missing_columns)
+            formatted_columns = [f"`{col}`" for col in missing_columns]
+            cols_str = ", ".join(formatted_columns)
             self.message = f"{msg}\nMissing columns: {cols_str}"
         else:
             self.message = msg
@@ -128,10 +129,12 @@ class AnnDataEmptyOrNoneInGeneralMetadata(CapException):
         )
 
         if none_columns:
-            msg += "\nColumns with None / NaN values: " + ", ".join(sorted(none_columns))
+            formatted_columns = [f"`{col}`" for col in none_columns]
+            msg += "\nColumns with None / NaN values: " + ", ".join(sorted(formatted_columns))
 
         if empty_columns:
-            msg += "\nColumns with empty values: " + ", ".join(sorted(empty_columns))
+            formatted_columns = [f"`{col}`" for col in empty_columns]
+            msg += "\nColumns with empty values: " + ", ".join(sorted(formatted_columns))
 
         self.message = msg
 
@@ -165,9 +168,9 @@ class AnnDataUnsupportedGenes(AnnDataNonStandardVarError):
 
     def __init__(self, missing_genes_count: int = None):
         msg = (
-            "File does not contain valid ENSEMBL terms in var.\n"
-            "We currently support only Homo sapiens and Mus musculus.\n"
-            "In the case of multiple species in the dataset, orthologous Homo sapiens genes are required.\n"
+            "File does not contain valid ENSEMBL terms in `var`.\n"
+            "We currently support only `Homo sapiens` and `Mus musculus`.\n"
+            "In the case of multiple species in the dataset, orthologous `Homo sapiens` genes are required.\n"
             "If there are other species you wish to upload to CAP, please contact "
             "support@celltype.info and we will work to accommodate your request."
         )
@@ -185,7 +188,7 @@ class CSCMatrixInX(CapException):
         """
         super().__init__()
         self.locations = locations
-        loc_str = " and ".join(locations)
+        loc_str = " and ".join([f"`{loc}`" for loc in locations])
         self.message = (
             f"A CSC matrix is found in {loc_str}. "
             "The gene expression matrix must be stored in CSR or dense format!"

@@ -323,7 +323,7 @@ def test_csc_in_both_raises(tmp_path):
         with read_h5ad(p, edit=False) as cap_adata:
             v._validate_x_and_raw_x_formats(cap_adata)
 
-    assert "X and raw.X" in e.value.message
+    assert "`X` and `raw.X`" in e.value.message
 
 
 def test_dense_and_csr_pass(tmp_path):
