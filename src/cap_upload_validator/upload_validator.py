@@ -21,7 +21,7 @@ from .errors import (
     AnnDataMissingEmbeddings,
     AnnDataMissingObs,
     AnnDataMissingObsColumns,
-    AnnDataMultipleDiseaseOntologyIDs,
+    AnnDataMultipleOntologyIDs,
     AnnDataInvalidDiseaseOntologyForHuman,
     AnnDataMissingVarIndex,
     AnnDataNumericVarIndex,
@@ -186,6 +186,7 @@ class UploadValidator:
         missing_columns: list[str] = []
         none_columns: set[str] = set()
         empty_columns: set[str] = set()
+        multiple_ontology_columns: set[str] = set()
 
         def _check_column(series: pd.Series, name: str):
             has_none, has_empty = self._classify_missing(series)
@@ -214,10 +215,27 @@ class UploadValidator:
                 if ont_id_col not in cap_adata.obs.columns:
                     cap_adata.read_obs(columns=[ont_id_col])
 
-                _check_column(cap_adata.obs[ont_id_col], ont_id_col)
+                series = cap_adata.obs[ont_id_col]
+                _check_column(series, ont_id_col)
 
+                # General validation (all ontology columns)
+                unique_values = (
+                    series
+                    .dropna()
+                    .astype(str)
+                    .str.strip()
+                    .unique()
+                )
+
+                for value_str in unique_values:
+                    if not value_str:
+                        continue
+                    if "," in value_str:
+                        multiple_ontology_columns.add(ont_id_col)
+
+                # Disease-specific validation
                 if col == "disease":
-                    self._validate_disease_ontology(cap_adata.obs[ont_id_col])
+                    self._validate_disease_ontology(series)
 
         # Report missing columns
         if missing_columns:
@@ -231,46 +249,39 @@ class UploadValidator:
                 ", ".join(sorted(empty_columns)) if empty_columns else "—",
                 ", ".join(sorted(none_columns)) if none_columns else "—",
             )
-            self._multi_exception.append(
-                AnnDataEmptyOrNoneInGeneralMetadata(
-                    none_columns=list(none_columns),
-                    empty_columns=list(empty_columns),
-                )
-            )
+            self._multi_exception.append(AnnDataEmptyOrNoneInGeneralMetadata(none_columns=list(none_columns), empty_columns=list(empty_columns)))
+
+        if multiple_ontology_columns:
+            self._multi_exception.append(AnnDataMultipleOntologyIDs(columns=list(multiple_ontology_columns)))
 
         logger.debug("Finished checking obs!")
 
     def _validate_disease_ontology(self, series: pd.Series) -> None:
-        if series is None:
+        if series is None or self._organism is not HomoSapiens:
             return
 
-        has_multiple_ids = False
         has_invalid_prefix_for_human = False
 
-        for value in series.dropna():
-            value_str = str(value).strip()
+        unique_values = (
+            series
+            .dropna()
+            .astype(str)
+            .str.strip()
+            .unique()
+        )
 
+        delimiter = ":"
+        for value_str in unique_values:
             if not value_str:
                 continue
 
-            # Multiple IDs restriction
-            if "," in value_str:
-                has_multiple_ids = True
+            if delimiter not in value_str:
+                has_invalid_prefix_for_human = True
                 continue
 
-            # Human-specific restriction
-            if self._organism is HomoSapiens:
-                delimiter = ":"
-                if delimiter not in value_str:
-                    continue  # format validation not in scope
-
-                prefix = value_str.split(delimiter, 1)[0]
-                if prefix not in DISEASE_ONTOLOGY_HUMAN_PREFIXES:
-                    has_invalid_prefix_for_human = True
-
-        # Append errors only once
-        if has_multiple_ids:
-            self._multi_exception.append(AnnDataMultipleDiseaseOntologyIDs())
+            prefix = value_str.split(delimiter, 1)[0]
+            if prefix not in DISEASE_ONTOLOGY_HUMAN_PREFIXES:
+                has_invalid_prefix_for_human = True
 
         if has_invalid_prefix_for_human:
             self._multi_exception.append(AnnDataInvalidDiseaseOntologyForHuman())

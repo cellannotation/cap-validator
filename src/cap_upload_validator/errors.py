@@ -114,9 +114,19 @@ class AnnDataMissingObsColumns(CapException):
             self.message = msg
 
 
-class AnnDataMultipleDiseaseOntologyIDs(CapException):
-    name = "AnnDataMultipleDiseaseOntologyIDs"
-    message = "Only one disease ontology ID is allowed per value."
+class AnnDataMultipleOntologyIDs(CapException):
+    name = "AnnDataMultipleOntologyIDs"
+
+    def __init__(self, columns: list[str] | None = None):
+        msg = (
+            "Ontology term columns must contain exactly one ontology ID per value. "
+            "Multiple IDs (e.g. comma-separated values) are not allowed."
+        )
+
+        if columns:
+            msg += "\nColumns with multiple IDs detected: " + ", ".join(sorted(columns))
+
+        self.message = msg
 
 
 class AnnDataInvalidDiseaseOntologyForHuman(CapException):

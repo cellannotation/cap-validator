@@ -31,6 +31,8 @@ from cap_upload_validator.errors import (
     CapMultiException,
     AnnDataEmptyOrNoneInGeneralMetadata,
     CSCMatrixInX,
+    AnnDataMultipleOntologyIDs,
+    AnnDataInvalidDiseaseOntologyForHuman,
 )
 
 TMP_DIR = Path(tempfile.mkdtemp())
@@ -338,3 +340,93 @@ def test_dense_and_csr_pass(tmp_path):
 
     with read_h5ad(p, edit=False) as cap_adata:
         v._validate_x_and_raw_x_formats(cap_adata) # should not raise
+
+
+def add_required_obs_columns(adata):
+    adata.obs[ORGANISM_COLUMN] = pd.Categorical(
+        [HomoSapiens.name] * adata.n_obs
+    )
+    adata.obs["assay_ontology_term_id"] = pd.Categorical(
+        ["EFO:0000001"] * adata.n_obs
+    )
+    adata.obs["organism_ontology_term_id"] = pd.Categorical(
+        [HomoSapiens.ontology_id] * adata.n_obs
+    )
+    adata.obs["disease_ontology_term_id"] = pd.Categorical(
+        ["MONDO:0000001"] * adata.n_obs
+    )
+    adata.obs["tissue_ontology_term_id"] = pd.Categorical(
+        ["UBERON:0000001"] * adata.n_obs
+    )
+
+
+def test_multiple_ontology_ids_raises(tmp_path, monkeypatch):
+    file_path = tmp_path / "test_multiple_ids.h5ad"
+
+    adata = ad.AnnData(X=np.eye(3))
+    add_required_obs_columns(adata)
+
+    # Add invalid multi-ID category
+    adata.obs["tissue_ontology_term_id"] = (
+        adata.obs["tissue_ontology_term_id"]
+        .cat.add_categories(["UBERON:0001,UBERON:0002"])
+    )
+
+    adata.obs.iloc[0, adata.obs.columns.get_loc("tissue_ontology_term_id")] = \
+        "UBERON:0001,UBERON:0002"
+
+    adata.write_h5ad(file_path)
+
+    validator = UploadValidator(file_path)
+    validator._multi_exception.raise_on_append = True
+
+    # Mock var validation
+    def mock_check_var_index(self, cap_adata):
+        self._organism = HomoSapiens
+
+    monkeypatch.setattr(
+        UploadValidator,
+        "_check_var_index",
+        mock_check_var_index,
+    )
+
+    with read_h5ad(file_path) as cap_adata:
+        cap_adata.read_obs()
+        validator._check_var_index(cap_adata)
+
+        with pytest.raises(AnnDataMultipleOntologyIDs):
+            validator._check_obs(cap_adata)
+
+
+def test_invalid_disease_prefix_for_human_raises(tmp_path, monkeypatch):
+    file_path = tmp_path / "test_invalid_disease_prefix.h5ad"
+
+    adata = ad.AnnData(X=np.eye(3))
+    add_required_obs_columns(adata)
+
+    # Replace disease column with invalid prefix
+    adata.obs["disease_ontology_term_id"] = pd.Categorical(
+        ["DOID:1234"] * adata.n_obs
+    )
+
+    adata.write_h5ad(file_path)
+
+    validator = UploadValidator(file_path)
+    validator._multi_exception.raise_on_append = True
+
+    # Mock var validation
+    def mock_check_var_index(self, cap_adata):
+        self._organism = HomoSapiens
+
+    monkeypatch.setattr(
+        UploadValidator,
+        "_check_var_index",
+        mock_check_var_index,
+    )
+
+    with read_h5ad(file_path) as cap_adata:
+        cap_adata.read_obs()
+        validator._check_var_index(cap_adata)
+
+        with pytest.raises(AnnDataInvalidDiseaseOntologyForHuman):
+            validator._check_obs(cap_adata)
