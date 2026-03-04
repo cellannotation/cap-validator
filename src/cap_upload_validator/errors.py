@@ -117,7 +117,7 @@ class AnnDataMissingObsColumns(CapException):
 class AnnDataMultipleOntologyIDs(CapException):
     name = "AnnDataMultipleOntologyIDs"
 
-    def __init__(self, columns: list[str] | None = None):
+    def __init__(self, columns: Optional[List[str]] = None):
         msg = (
             "Ontology term columns must contain exactly one ontology ID per value. "
             "Multiple IDs (e.g. comma-separated values) are not allowed."
