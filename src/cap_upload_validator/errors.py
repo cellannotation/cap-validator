@@ -131,7 +131,7 @@ class AnnDataMultipleOntologyIDs(CapException):
 
 class AnnDataInvalidDiseaseOntologyForHuman(CapException):
     name = "AnnDataInvalidDiseaseOntologyForHuman"
-    message = "For human samples only MONDO or PATO IDs are allowed."
+    message = "Unsupported disease ontology term. For Homo sapiens datasets, only `MONDO:` and `PATO:` ontology terms are supported."
 
 
 class AnnDataEmptyOrNoneInGeneralMetadata(CapException):
