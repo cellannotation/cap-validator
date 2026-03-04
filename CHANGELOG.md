@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+## [1.7.0] - 2026-03-04
+
+### Added 
+
+- New validation error `AnnDataMultipleOntologyIDs`, which requires each ontology term ID to be a single term.
+- New validation error `AnnDataInvalidDiseaseOntologyForHuman`, which requires the use of `MONDO:` and `PATO:` disease ontology terms for *Homo sapiens* datasets.
+
 ## [1.6.1] - 2026-02-27
 
 ### Updated
