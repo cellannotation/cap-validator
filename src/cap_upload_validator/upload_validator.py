@@ -353,12 +353,6 @@ class UploadValidator:
         logger.debug(f"Organism(s) in dataset = {dataset_organisms}, known organisms = {known_organisms}")
 
         missing_genes_mask = None
-        if UnsupportedOrganism in dataset_organisms:
-            organism = (UnsupportedOrganism if len(dataset_organisms) == 1 else MultiSpecies)
-            self._organism = organism
-            logger.debug("Unknown organism found, skipping only known-gene validation.")
-            return missing_genes_mask
-
         # Check ENSEMBL ids for supported organism
         if len(dataset_organisms) == 1:
             organism = dataset_organisms[0]
@@ -372,7 +366,10 @@ class UploadValidator:
         elif len(dataset_organisms) > 1:
             logger.debug("There are multiple organisms in dataset")
             self._organism = MultiSpecies
-            missing_genes_mask = self._validate_gene_ids(clean_index, MultiSpecies)
+            if UnsupportedOrganism in dataset_organisms:
+                logger.debug("Unknown organism found, skipping only known-gene validation.")
+            else:
+                missing_genes_mask = self._validate_gene_ids(clean_index, MultiSpecies)
 
         logger.debug("Finished checking var index!")
         return missing_genes_mask
