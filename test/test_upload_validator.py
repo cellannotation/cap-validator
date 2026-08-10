@@ -34,6 +34,7 @@ from cap_upload_validator.errors import (
     AnnDataMultipleOntologyIDs,
     AnnDataInvalidDiseaseOntologyForHuman,
     AnnDataGeneIndexIsNotUnique,
+    AnnDataUnsupportedGenes,
 )
 
 TMP_DIR = Path(tempfile.mkdtemp())
@@ -191,25 +192,36 @@ def test_var_index():
 
 
 @pytest.mark.parametrize(
-    ("var_names", "should_fail"),
+    ("organisms", "var_names", "expected_error"),
     [
-        (["ENSG000001.1", "ENSG000001.2"], True),  # duplicate after removing version suffix
-        (["TP53", "TP53"], True),  # duplicate gene symbol
-        (["unknown_gene_1", "unknown_gene_2"], False),  # unique genes
+        (
+            "unsupported organism",
+            ["ENSG000001.1", "ENSG000001.2"],
+            AnnDataGeneIndexIsNotUnique,
+        ),  # duplicate after removing version suffix
+        (
+            "unsupported organism",
+            ["TP53", "TP53"],
+            AnnDataGeneIndexIsNotUnique,
+        ),  # duplicate gene symbol
+        (
+            "unsupported organism",
+            ["unknown_gene_1", "unknown_gene_2"],
+            None,
+        ),  # unique genes for a single unsupported organism
+        (
+            [HomoSapiens.name, "unsupported organism"],
+            ["ENSG00000290825", "ENSG00000223972"],
+            None,
+        ),  # known human genes for multiple organisms
+        (
+            [HomoSapiens.name, "unsupported organism"],
+            ["unknown_gene_1", "unknown_gene_2"],
+            AnnDataUnsupportedGenes,
+        ),  # genes outside the human gene map for multiple organisms
     ],
 )
-@pytest.mark.parametrize(
-    "organisms",
-    [
-        "unsupported organism",
-        [HomoSapiens.name, "unsupported organism"],  # mixed with unsupported organism
-    ],
-)
-def test_var_requires_unique_genes_for_any_unsupported_organism(
-    var_names,
-    should_fail,
-    organisms,
-):
+def test_var_validation_with_unsupported_organisms(organisms, var_names, expected_error):
     adata = ad.AnnData(X=np.eye(len(var_names)))
     adata.var_names = var_names
     adata.obs[ORGANISM_COLUMN] = organisms
@@ -217,8 +229,8 @@ def test_var_requires_unique_genes_for_any_unsupported_organism(
     validator = UploadValidator(None)
     validator._multi_exception.raise_on_append = True
 
-    if should_fail:
-        with pytest.raises(AnnDataGeneIndexIsNotUnique):
+    if expected_error:
+        with pytest.raises(expected_error):
             validator._check_var_index(adata)
     else:
         assert validator._check_var_index(adata) is None

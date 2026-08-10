@@ -11,7 +11,6 @@ from .gene_mapping import (
     MusMusculus,
     MultiSpecies,
     Organism,
-    UnsupportedOrganism,
     str_to_organism,
     ontology_id_to_organism,
 )
@@ -366,10 +365,7 @@ class UploadValidator:
         elif len(dataset_organisms) > 1:
             logger.debug("There are multiple organisms in dataset")
             self._organism = MultiSpecies
-            if UnsupportedOrganism in dataset_organisms:
-                logger.debug("Unknown organism found, skipping only known-gene validation.")
-            else:
-                missing_genes_mask = self._validate_gene_ids(clean_index, MultiSpecies)
+            missing_genes_mask = self._validate_gene_ids(clean_index, MultiSpecies)
 
         logger.debug("Finished checking var index!")
         return missing_genes_mask
