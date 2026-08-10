@@ -33,6 +33,8 @@ from cap_upload_validator.errors import (
     CSCMatrixInX,
     AnnDataMultipleOntologyIDs,
     AnnDataInvalidDiseaseOntologyForHuman,
+    AnnDataGeneIndexIsNotUnique,
+    AnnDataUnsupportedGenes,
 )
 
 TMP_DIR = Path(tempfile.mkdtemp())
@@ -187,6 +189,51 @@ def test_var_index():
         check_var_index()
     except Exception as e:
         assert False, f"Unpredicted error: {e}"
+
+
+@pytest.mark.parametrize(
+    ("organisms", "var_names", "expected_error"),
+    [
+        (
+            "unsupported organism",
+            ["ENSG000001.1", "ENSG000001.2"],
+            AnnDataGeneIndexIsNotUnique,
+        ),  # duplicate after removing version suffix
+        (
+            "unsupported organism",
+            ["TP53", "TP53"],
+            AnnDataGeneIndexIsNotUnique,
+        ),  # duplicate gene symbol
+        (
+            "unsupported organism",
+            ["unknown_gene_1", "unknown_gene_2"],
+            None,
+        ),  # unique genes for a single unsupported organism
+        (
+            [HomoSapiens.name, "unsupported organism"],
+            ["ENSG00000290825", "ENSG00000223972"],
+            None,
+        ),  # known human genes for multiple organisms
+        (
+            [HomoSapiens.name, "unsupported organism"],
+            ["unknown_gene_1", "unknown_gene_2"],
+            AnnDataUnsupportedGenes,
+        ),  # genes outside the human gene map for multiple organisms
+    ],
+)
+def test_var_validation_with_unsupported_organisms(organisms, var_names, expected_error):
+    adata = ad.AnnData(X=np.eye(len(var_names)))
+    adata.var_names = var_names
+    adata.obs[ORGANISM_COLUMN] = organisms
+
+    validator = UploadValidator(None)
+    validator._multi_exception.raise_on_append = True
+
+    if expected_error:
+        with pytest.raises(expected_error):
+            validator._check_var_index(adata)
+    else:
+        assert validator._check_var_index(adata) is None
 
 
 @pytest.mark.parametrize("set_organism", [False, True, "ont"])
